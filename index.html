@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Elven·Stuart's Garden</title>
+    
+    <script>
+        // 检查并重定向不带 / 的 URL
+        (function() {
+            const path = window.location.pathname;
+            const search = window.location.search;
+            
+            // 如果路径不以 / 结尾，且没有 hash
+            if (!path.endsWith('/') && !window.location.hash) {
+                // 构建新的 URL，添加 /
+                const newUrl = path + '/' + search + window.location.hash;
+                window.location.replace(newUrl);
+                return;
+            }
+        })();
+    </script>
+
+    <!-- 字体和全局样式 -->
+    <style>
+        @import url('https://google-fonts.mirrors.sjtug.sjtu.edu.cn/css2?family=Noto+Serif+SC:wght@400;600&display=swap');
+        
+        html, body {
+            font-family: 'Noto Serif SC', 'PingFang SC', 'Hiragino Sans GB', 
+                         'Microsoft YaHei', '微软雅黑', 'Helvetica Neue', 
+                         Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.8;
+            letter-spacing: 0.04em;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+        }
+
+
+        /* 添加返回首页按钮样式 */
+        .home-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .home-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .home-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .home-button svg {
+            width: 24px;
+            height: 24px;
+            fill: #1a73e8;
+        }
+
+        @media (max-width: 768px) {
+            .home-button {
+                bottom: 20px;
+                right: 20px;
+                width: 45px;
+                height: 45px;
+            }
+        }
+
+        /* 全局链接样式 */
+        a {
+            font-family: 'Noto Serif SC', serif;
+            color: #1a73e8;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        a:hover {
+            color: #3c4043;
+            text-decoration: underline;
+        }
+
+        /* Heti 全局样式 */
+        body {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 标题样式 */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Noto Serif SC', serif;
+            font-weight: 600;
+            margin-bottom: 0.8em;
+            line-height: 1.4;
+        }
+
+        /* Markdown 内容样式 */
+        .markdown-body {
+            box-sizing: border-box;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            word-break: break-word;
+        }
+
+        /* 段落首行缩进 */
+        .markdown-body p {
+            font-family: 'Noto Serif SC', serif;
+            text-indent: 2em;
+            margin-bottom: 1em;
+        }
+
+        /* 修复列表和代码块的缩进 */
+        .markdown-body ul, 
+        .markdown-body ol,
+        .markdown-body pre {
+            text-indent: 0;
+        }
+    </style>
+
+    <!-- GitHub Markdown CSS -->
+    <link rel="stylesheet" href="./in/github-markdown.min.css">
+    
+    <!-- Heti.css 中文排版 -->
+    <link rel="stylesheet" href="./in/heti.min.css">
+    
+    <!-- Marked.js -->
+    <script src="./in/marked.min.js"></script>
+    
+    <!-- Heti.js -->
+    <script src="./in/heti-addon.min.js"></script>
+</head>
+<body class="heti">
+    <div id="content" class="markdown-body heti-content"></div>
+    <!-- 添加返回首页按钮 -->
+    <button class="home-button" onclick="window.location.hash = '/';" title="返回首页">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L1 12h3v9h7v-6h2v6h7v-9h3L12 2zm0 2.84L19.5 11H18v9h-3v-6H9v6H6v-9H4.5L12 4.84z"/>
+        </svg>
+    </button>
+    <script>
+        // 检查并重定向不带 / 的 URL
+        (function() {
+            const path = window.location.pathname;
+            const search = window.location.search;
+            
+            // 如果路径不以 / 结尾，且没有 hash
+            if (!path.endsWith('/') && !window.location.hash) {
+                // 构建新的 URL，添加 /
+                const newUrl = path + '/' + search + window.location.hash;
+                window.location.replace(newUrl);
+                return;
+            }
+        })();
+    
+        // 提取第一行的大标题
+        function extractTitle(markdown) {
+            const firstLine = markdown.split('\n')[0].trim();
+            if (firstLine.startsWith('# ')) {
+                return firstLine.substring(2).trim();
+            }
+            return null;
+        }
+    
+        // 路径解析函数
+        function resolvePath(basePath, relativePath) {
+            // 分割基础路径和相对路径
+            const baseSegments = basePath.split('/');
+            const relativeSegments = relativePath.split('/');
+            
+            // 处理相对路径
+            for (let segment of relativeSegments) {
+                if (segment === '.') {
+                    continue;
+                } else if (segment === '..') {
+                    baseSegments.pop();
+                } else {
+                    baseSegments.push(segment);
+                }
+            }
+            
+            return baseSegments.join('/');
+        }
+    
+        // 转换 Markdown 链接为哈希路由链接
+        function convertMarkdownLinks(htmlContent, currentPath) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            
+            const links = tempDiv.getElementsByTagName('a');
+            
+            for (let link of links) {
+                const href = link.getAttribute('href');
+                
+                // 检查是否是 Markdown 文件链接
+                if (href && (href.endsWith('.md') || !href.startsWith('http'))) {
+                    // 处理相对路径
+                    let resolvedPath;
+                    if (href.startsWith('./') || href.startsWith('../')) {
+                        // 获取当前文件所在目录
+                        const currentDir = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                        
+                        // 解析相对路径
+                        resolvedPath = resolvePath(currentDir, href);
+                    } else if (href.startsWith('/')) {
+                        // 绝对路径
+                        resolvedPath = href.substring(1);
+                    } else {
+                        // 非相对路径
+                        resolvedPath = href;
+                    }
+    
+                    // 移除 .md 扩展名，并转换为哈希路由
+                    const hashLink = resolvedPath.replace('.md', '');
+                    link.setAttribute('href', `#/${hashLink}`);
+                }
+            }
+            
+            return tempDiv.innerHTML;
+        }
+    
+        // 获取当前 hash 路径并自动添加 .md 扩展名
+        function getCurrentPath() {
+            // 检查当前路径是否包含 hash
+            if (window.location.hash) {
+                let path = window.location.hash.substring(2); // 移除 #/ 前缀
+                
+                // 如果没有路径，使用默认 index.md
+                if (!path) {
+                    return 'README.md';
+                }
+                
+                // 如果路径不以 .md 结尾，自动添加 .md 扩展名
+                return path.endsWith('.md') ? path : path + '.md';
+            } else {
+                // 如果没有 hash，自动跳转到 #/
+                window.location.hash = '/';
+                return 'index.md';
+            }
+        }
+    
+        // 加载并渲染 Markdown 文件
+        async function loadMarkdown() {
+            const path = getCurrentPath();
+            const possiblePaths = [
+                `./${path}`,
+                `./in/${path}`
+            ];
+    
+            for (const tryPath of possiblePaths) {
+                try {
+                    const response = await fetch(tryPath);
+                    if (!response.ok) {
+                        continue;
+                    }
+                    
+                    const markdown = await response.text();
+                    
+                    // 提取并设置标题
+                    const title = extractTitle(markdown) || 'Markdown Viewer';
+                    document.getElementById('pageTitle').textContent = title;
+    
+                    // 渲染 Markdown
+                    const htmlContent = marked.parse(markdown);
+                    
+                    // 转换 Markdown 链接，传入当前文件路径
+                    const convertedHtmlContent = convertMarkdownLinks(htmlContent, path);
+                    
+                    document.getElementById('content').innerHTML = convertedHtmlContent;
+                    
+                    // 使用 Heti 重新排版
+                    if (window.Heti) {
+                        const heti = new Heti('.heti-content');
+                        heti.autoSpacing();
+                    }
+                    
+                    return;
+                } catch (error) {
+                    console.error(`Error loading ${tryPath}:`, error);
+                }
+            }
+    
+            // 如果所有路径都失败
+            document.getElementById('content').innerHTML = `<p>Error: 无法找到 Markdown 文件</p>`;
+        }
+    
+        // 监听哈希变化事件
+        window.addEventListener('hashchange', loadMarkdown);
+    
+        // 初始加载
+        loadMarkdown();
+    
+        // 页面加载完成后再次应用 Heti
+        window.addEventListener('load', () => {
+            if (window.Heti) {
+                const heti = new Heti('.heti-content');
+                heti.autoSpacing();
+            }
+        });
+    </script>
+    
+</body>
+</html>
