@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preload" href="./nexmoe.css" as="style" />
+    <link rel="stylesheet" href="./nexmoe.css" />
+    <title>延边大学东亚史题库</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h3 {
+            cursor: pointer;
+        }
+        button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h3>延边大学东亚史题库</h3>
+    <p>Made by 梦貘&ChatGPT with ❤<br/>【声明】仅供内部使用，请勿传播。后台实时监控流量，若有传播，则即刻删除。
+</p>
+    <a href="./">回到首页</a><br/><br/>
+    <button id="refresh-button">刷新</button><br/><br/>
+    <article style="padding: 20px;">
+    <div id="content">
+        <h5 id="random-title"></h5>
+        <div id="details" style="display: none;"></div>
+    </div>
+</article>
+<script>
+    async function fetchMarkdown(fileName) {
+        const response = await fetch(fileName);
+        const text = await response.text();
+        return text;
+    }
+
+    function parseMarkdown(text) {
+        const sections = text.split(/\n(?=### )/).filter(Boolean);
+        const parsedSections = sections.map(section => {
+            const [title, ...content] = section.split('\n').filter(Boolean);
+            const formattedContent = content.map(line => `<p>${line.trim()}</p>`).join('');
+            return {
+                title: title.replace('### ', '').trim(),
+                content: formattedContent
+            };
+        });
+        return parsedSections;
+    }
+
+    function displayRandomTitle(sections) {
+        const randomIndex = Math.floor(Math.random() * sections.length);
+        const randomSection = sections[randomIndex];
+        const titleElement = document.getElementById('random-title');
+        const detailsElement = document.getElementById('details');
+
+        titleElement.textContent = randomSection.title;
+        detailsElement.innerHTML = randomSection.content;
+        detailsElement.style.display = 'none';
+
+        titleElement.onclick = function() {
+            detailsElement.style.display = 'block';
+        };
+    }
+
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    document.getElementById('refresh-button').onclick = async function() {
+        const id = getQueryParam('id') || 'index';
+        const markdownFileName = `${id}.md`;
+        const markdownText = await fetchMarkdown(markdownFileName);
+        const sections = parseMarkdown(markdownText);
+        displayRandomTitle(sections);
+    };
+
+    // Initial load
+    document.getElementById('refresh-button').click();
+</script>
+</body>
+</html>
