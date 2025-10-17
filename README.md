@@ -21,6 +21,7 @@
 - [**辩行记**：](http://tools.b-hu.org/projects/bianxingji/) 周旋毅的辩行记的存档网站。
 - [**世界文明演进地图**：](http://tools.b-hu.org/projects/historyprocessmap/) 一个日本人做的纯前端文明演进地图。至少更新到2018年了。但是他的服务器坏了，我就复活了一份。
 - [**文件预览**：](http://tools.b-hu.org/projects/filepreview/) 纯前端的docx、pptx、pdf预览工具
+- [**A3尺寸PDF切A4**](http://tools.b-hu.org/projects/a3-pdf-to-a4/)
 
 ### 带后端的工具
 
