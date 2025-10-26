@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小饭桌每日任务表</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./github-markdown.min.css">
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+        body {
+            font-family: 'Noto Sans SC', system-ui, -apple-system, Segoe UI, Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        .toolbar {
+            position: fixed;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(255,255,255,0.95);
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 6px 8px;
+            display: flex;
+            gap: 8px;
+        }
+        .toolbar button { padding: 6px 10px; border: 1px solid #ddd; background: #fafafa; border-radius: 6px; cursor: pointer; }
+        .toolbar button.primary { background: #1677ff; color: #fff; border-color: #1677ff; }
+        @media print {
+            .toolbar { display: none; }
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            height: calc(100vh - 2cm);
+            padding: 0;
+        }
+        .task-form {
+            width: 49%;
+            height: 100%;
+            border: 1px solid black;
+            box-sizing: border-box;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid black;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .title {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .info {
+            font-size: 12px;
+            display: flex;
+            gap: 20px;
+        }
+        .task-section {
+            flex-grow: 1;
+            border: 1px solid black;
+            padding: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+        .task-section-header {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 5px;
+        }
+        .task-section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .notes-section {
+            font-size: 10px;
+            color: #888;
+        }
+        .notes-section span {
+            margin-right: 10px;
+        }
+        .task-list-container {
+            display: flex;
+            flex-grow: 1;
+            gap: 5px;
+        }
+        .task-subsection {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+        .task-subsection-title {
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 3px;
+        }
+        .task-content {
+            overflow: hidden;
+            flex: 1;
+            position: relative;
+        }
+        .task-content .markdown-body { font-size: 12px; }
+        .comment-section {
+            border: 1px solid black;
+            padding: 5px;
+            height: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        .comment-section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .comment-body { flex: 1; overflow: hidden; }
+        .comment-body .markdown-body { font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button onclick="window.location.href='index.html'">返回编辑</button>
+        <button class="primary" onclick="window.print()">打印</button>
+    </div>
+    <div class="container">
+        <div class="task-form">
+            <div class="header">
+                <div class="title">小饭桌每日任务表</div>
+                <div class="info">
+                    <div class="name">姓名：____________</div>
+                    <div class="date">日期：____________</div>
+                </div>
+            </div>
+            <div class="task-section">
+                <div class="task-section-header">
+                    <div class="task-section-title">任务清单：</div>
+                    <div class="notes-section">
+                        <span>·  待完成</span>
+                        <span>- 推迟完成</span>
+                        <span>✓ 已完成</span>
+                    </div>
+                </div>
+                <div class="task-list-container">
+                    <div class="task-subsection">
+                        <div class="task-subsection-title">课内任务</div>
+                        <div class="task-content"><div class="markdown-body" data-slot="left-inner"></div></div>
+                    </div>
+                    <div class="task-subsection">
+                        <div class="task-subsection-title">课外任务</div>
+                        <div class="task-content"><div class="markdown-body" data-slot="left-outer"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="comment-section">
+                <div class="comment-section-title">老师评语：</div>
+                <div class="comment-body"><div class="markdown-body" data-slot="left-comment"></div></div>
+            </div>
+        </div>
+
+        <div class="task-form">
+            <div class="header">
+                <div class="title">小饭桌每日任务表</div>
+                <div class="info">
+                    <div class="name">姓名：____________</div>
+                    <div class="date">日期：____________</div>
+                </div>
+            </div>
+            <div class="task-section">
+                <div class="task-section-header">
+                    <div class="task-section-title">任务清单：</div>
+                    <div class="notes-section">
+                        <span>· 待完成</span>
+                        <span>- 推迟完成</span>
+                        <span>✓ 已完成</span>
+                    </div>
+                </div>
+                <div class="task-list-container">
+                    <div class="task-subsection">
+                        <div class="task-subsection-title">课内任务</div>
+                        <div class="task-content"><div class="markdown-body" data-slot="right-inner"></div></div>
+                    </div>
+                    <div class="task-subsection">
+                        <div class="task-subsection-title">课外任务</div>
+                        <div class="task-content"><div class="markdown-body" data-slot="right-outer"></div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="comment-section">
+                <div class="comment-section-title">老师评语：</div>
+                <div class="comment-body"><div class="markdown-body" data-slot="right-comment"></div></div>
+            </div>
+        </div>
+    </div>
+    <script src="./marked.min.js"></script>
+    <script>
+        function getQueryParam(key) {
+            const url = new URL(window.location.href);
+            return url.searchParams.get(key);
+        }
+        function decodeData(b64) {
+            try { return JSON.parse(decodeURIComponent(escape(atob(b64)))); } catch (e) { return null; }
+        }
+        function setText(selector, text) {
+            const el = document.querySelector(selector);
+            if (el) el.textContent = text;
+        }
+        function renderMarkdown(container, md) {
+            if (!container) return;
+            marked.setOptions({ gfm: true, breaks: false });
+            container.innerHTML = marked.parse(md || '');
+            // 确保任务列表 checkbox 可见但打印不交互
+            container.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.disabled = true; });
+        }
+        function fitToContainer(el, minPx) {
+            if (!el) return;
+            const parent = el.parentElement;
+            if (!parent) return;
+            let low = minPx || 9, high = 16, best = low;
+            // binary search font-size to fit height
+            for (let i = 0; i < 12; i++) {
+                const mid = Math.floor((low + high) / 2);
+                el.style.fontSize = mid + 'px';
+                if (el.scrollHeight <= parent.clientHeight && el.scrollWidth <= parent.clientWidth) {
+                    best = mid; low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+            el.style.fontSize = best + 'px';
+        }
+        function applyAutoFit() {
+            document.querySelectorAll('.task-content .markdown-body, .comment-body .markdown-body').forEach(el => fitToContainer(el, 9));
+        }
+        function fill(data) {
+            if (!data) return;
+            const forms = document.querySelectorAll('.task-form');
+            const map = [data.left || {}, data.right || {}];
+            forms.forEach((form, idx) => {
+                const d = map[idx] || {};
+                const nameEl = form.querySelector('.info .name');
+                const dateEl = form.querySelector('.info .date');
+                if (nameEl) nameEl.textContent = '姓名：' + (d.name || '____________');
+                if (dateEl) dateEl.textContent = '日期：' + (d.date || '____________');
+            });
+            renderMarkdown(document.querySelector('[data-slot="left-inner"]'), (data.left && data.left.inner) || '');
+            renderMarkdown(document.querySelector('[data-slot="left-outer"]'), (data.left && data.left.outer) || '');
+            renderMarkdown(document.querySelector('[data-slot="left-comment"]'), (data.left && data.left.comment) || '');
+            renderMarkdown(document.querySelector('[data-slot="right-inner"]'), (data.right && data.right.inner) || '');
+            renderMarkdown(document.querySelector('[data-slot="right-outer"]'), (data.right && data.right.outer) || '');
+            renderMarkdown(document.querySelector('[data-slot="right-comment"]'), (data.right && data.right.comment) || '');
+            requestAnimationFrame(applyAutoFit);
+        }
+        const raw = getQueryParam('data');
+        const data = raw ? decodeData(raw) : null;
+        fill(data);
+        window.addEventListener('load', applyAutoFit);
+        window.addEventListener('resize', applyAutoFit);
+    </script>
+</body>
+</html>

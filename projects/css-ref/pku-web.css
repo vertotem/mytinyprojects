@@ -1,0 +1,251 @@
+/* PKU (Peking University) Web Theme
+ * Converted from Typora PKU theme for general web use
+ * 北京大学风格主题 - 通用网页版
+ * Original: https://github.com/pku-zyf/pku-typora-theme/
+ */
+
+/* Font Imports - using web-safe fonts as fallback */
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+:root {
+  --pku-red: #94070a;
+  --background-color: #f3f2ee;
+  --special-color: #87674f;
+  --text-color: #000000;
+  --link-color: #065588;
+  
+  /* Docute变量覆盖 */
+  --page-background: #f3f2ee;
+  --main-background: #f3f2ee;
+  --header-background: #f3f2ee;
+  --sidebar-background: #f3f2ee;
+  
+  /* Fonts */
+  --font-serif: 'EB Garamond', Georgia, 'Times New Roman', 'STSong', '宋体', serif;
+  --font-code: Menlo, Monaco, 'Courier New', monospace;
+}
+
+/* 统一容器宽度与默认主题一致 */
+.Wrap {
+  max-width: 1180px !important;
+}
+
+.Content,
+.layout-wide .Content,
+.Content[data-v-2f23fdf8],
+.layout-wide .Content[data-v-2f23fdf8] {
+  max-width: 770px !important;
+}
+
+html {
+  font-size: 18px;
+}
+
+html, body {
+  background: var(--background-color);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--font-serif);
+  color: var(--text-color);
+  line-height: 1.75;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold;
+  line-height: 1.4;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+h1 {
+  font-size: 2em;
+  text-align: center;
+  margin-top: 2em;
+  border-bottom: 2px solid var(--pku-red);
+  padding-bottom: 0.5em;
+}
+
+h2 {
+  font-size: 1.6em;
+  border-left: 4px solid var(--pku-red);
+  padding-left: 0.5em;
+}
+
+h3 {
+  font-size: 1.35em;
+}
+
+h4 {
+  font-size: 1.15em;
+}
+
+h5 {
+  font-size: 1em;
+}
+
+h6 {
+  font-size: 0.9em;
+}
+
+/* Paragraph */
+p {
+  margin: 1em 0;
+  text-align: justify;
+  text-indent: 2em;
+}
+
+/* Links */
+a {
+  color: var(--link-color);
+  text-decoration: none;
+  border-bottom: 1px solid var(--link-color);
+}
+
+a:hover {
+  color: var(--pku-red);
+  border-bottom: 2px solid var(--pku-red);
+}
+
+/* Lists */
+ul, ol {
+  margin: 1em 0;
+  padding-left: 2em;
+}
+
+li {
+  margin: 0.5em 0;
+  line-height: 1.75;
+}
+
+/* Blockquote */
+blockquote {
+  margin: 1em 0 1em 1em;
+  padding-left: calc(1em - 2px);
+  border-left: 2px solid var(--special-color);
+  color: #555;
+  font-style: italic;
+}
+
+/* Horizontal Rule */
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 2em 0;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5em 0;
+}
+
+table th, table td {
+  border: 1px solid #ddd;
+  padding: 0.5em;
+  text-align: left;
+}
+
+table th {
+  background-color: var(--pku-red);
+  color: white;
+  font-weight: bold;
+}
+
+table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Code */
+code {
+  font-family: var(--font-code);
+  background-color: #e8e7e4;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+pre {
+  font-family: var(--font-code);
+  background-color: #e8e7e4;
+  padding: 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+  line-height: 1.5;
+  margin: 1.5em 0;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* Strong and Emphasis */
+strong {
+  font-weight: bold;
+  color: var(--pku-red);
+}
+
+em {
+  font-style: italic;
+}
+
+/* Mark */
+mark {
+  background-color: #fff9c4;
+  padding: 2px 4px;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5em auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Design */
+@media only screen and (min-width: 1400px) {
+  body {
+    max-width: 60em;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+  
+  body {
+    padding: 1rem;
+  }
+  
+  h1 {
+    font-size: 1.75em;
+  }
+  
+  h2 {
+    font-size: 1.5em;
+  }
+  
+  p {
+    text-indent: 1em;
+  }
+}
+
+@media print {
+  body {
+    background: white;
+  }
+  
+  a {
+    color: #000;
+  }
+}
+

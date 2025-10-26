@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地文件系统模拟器</title>
+    <!-- 引入 Tailwind CSS 以实现现代化和响应式设计 -->
+    <script src="./in/tailwind.css"></script>
+    <!-- 引入 Font Awesome 以提供更丰富的图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 自定义样式，用于补充 Tailwind CSS */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* 文件树基础样式 */
+        .file-tree ul {
+            padding-left: 1.5rem;
+            border-left: 1px solid #e2e8f0;
+        }
+
+        .file-tree li {
+            list-style: none;
+            padding: 0.25rem 0;
+        }
+
+        /* 隐藏子级，除非父级有 'open' 类 */
+        .file-tree .node > ul {
+            display: none;
+        }
+
+        .file-tree .node.open > ul {
+            display: block;
+        }
+        
+        /* 文件夹和文件的光标样式 */
+        .file-tree .node > div {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+        
+        .file-tree .node > div:hover {
+            background-color: #f1f5f9;
+        }
+
+        .file-tree .file > div {
+             cursor: default;
+        }
+        
+        .file-tree .file a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* 展开/收起图标的旋转动画 */
+        .file-tree .node > div .toggle-icon {
+            transition: transform 0.2s ease-in-out;
+            margin-right: 0.5rem;
+        }
+
+        .file-tree .node.open > div .toggle-icon {
+            transform: rotate(90deg);
+        }
+
+        /* 搜索高亮样式 */
+        .highlight {
+            background-color: #fef08a; /* 黄色高亮 */
+            color: #713f12;
+            padding: 2px 0;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        
+        <!-- 头部区域 -->
+        <header class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">文件系统模拟器</h1>
+            <p class="text-gray-600 mt-1">通过解析 Markdown 文件动态生成可交互的文件树。</p>
+        </header>
+
+        <!-- 控制与搜索区域 -->
+        <div class="bg-white p-4 rounded-lg shadow-sm mb-6 sticky top-4 z-10">
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- 搜索框 -->
+                <div class="relative flex-grow">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" id="searchInput" placeholder="在文件树中搜索..." class="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <!-- 控制按钮 -->
+                <div class="flex items-center gap-2">
+                    <button id="expandAllBtn" class="w-full md:w-auto bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-expand-arrows-alt"></i>
+                        <span>全部展开</span>
+                    </button>
+                    <button id="collapseAllBtn" class="w-full md:w-auto bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-compress-arrows-alt"></i>
+                        <span>全部收起</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件树容器 -->
+        <main id="file-tree-container" class="bg-white p-4 md:p-6 rounded-lg shadow-sm file-tree">
+            <!-- 文件树将在这里动态生成 -->
+            <div id="loading" class="text-center text-gray-500">
+                <i class="fas fa-spinner fa-spin mr-2"></i>正在加载文件数据...
+            </div>
+        </main>
+
+        <!-- 页脚 -->
+        <footer class="text-center mt-8 text-sm text-gray-400">
+            <p>纯前端文件系统模拟器</p>
+        </footer>
+
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const fileTreeContainer = document.getElementById('file-tree-container');
+        const searchInput = document.getElementById('searchInput');
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const collapseAllBtn = document.getElementById('collapseAllBtn');
+        const loadingIndicator = document.getElementById('loading');
+
+        const FOLDER_ICON = '📁';
+        const FILE_ICON = '📄';
+
+        /**
+         * 解析 Markdown 列表并构建树形数据结构
+         * @param {string} markdownText - data.md 的内容
+         * @returns {Array} - 树形结构数组
+         */
+        function parseMarkdownToTree(markdownText) {
+            const lines = markdownText.split('\n').filter(line => line.trim() !== '');
+            const root = { children: [] };
+            const stack = [{ node: root, indent: -1 }];
+            const mdLinkRegex = /\[(.*?)\]\((.*?)\)/;
+
+            lines.forEach(line => {
+                const indent = line.search(/\S/); // 查找第一个非空白字符的位置
+                const content = line.trim().replace(/^- /, '');
+                
+                const match = content.match(mdLinkRegex);
+                let newNode;
+
+                if (match) {
+                    // 如果是 Markdown 链接格式 [text](url)
+                    newNode = { name: match[1], url: match[2], children: [] };
+                } else {
+                    // 如果是普通文本
+                    newNode = { name: content, url: null, children: [] };
+                }
+
+                while (stack[stack.length - 1].indent >= indent) {
+                    stack.pop();
+                }
+
+                stack[stack.length - 1].node.children.push(newNode);
+                stack.push({ node: newNode, indent });
+            });
+
+            return root.children;
+        }
+
+        /**
+         * 根据是否为文件夹获取图标
+         * @param {boolean} isFolder - 是否为文件夹
+         * @returns {string} - Emoji 图标
+         */
+        function getIcon(isFolder) {
+            return isFolder ? FOLDER_ICON : FILE_ICON;
+        }
+
+        /**
+         * 递归渲染文件树
+         * @param {Array} nodes - 树节点数组
+         * @param {number} level - 当前层级
+         * @returns {HTMLUListElement} - 生成的 ul 元素
+         */
+        function renderTree(nodes, level = 0) {
+            const ul = document.createElement('ul');
+            if (level > 0) {
+                ul.className = 'ml-4';
+            }
+
+            nodes.forEach(node => {
+                const li = document.createElement('li');
+                const isFolder = node.children && node.children.length > 0;
+                
+                li.className = isFolder ? 'node' : 'file';
+
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2';
+                
+                const icon = getIcon(isFolder);
+
+                let contentHtml;
+                if (isFolder) {
+                    contentHtml = `
+                        <i class="fas fa-chevron-right toggle-icon text-gray-400 w-3 text-center"></i>
+                        <span class="icon">${icon}</span>
+                        <span class="name">${node.name}</span>
+                    `;
+                } else {
+                    let fileContent;
+                    if (node.url) {
+                        let href = node.url;
+                        // 检查是否为指向 .md 文件的内部链接
+                        if (href.endsWith('.md') && !href.startsWith('http')) {
+                            const path = href.replace(/^\.\//, '').replace(/\.md$/, '');
+                            href = `doc.html#/${path}`;
+                        }
+                        // 对于所有带 url 的项，都创建为链接
+                        fileContent = `<a href="${href}" target="_blank" class="name hover:underline hover:text-blue-600">${node.name}</a>`;
+                    } else {
+                        // 没有 url 的项，作为普通文本展示
+                        fileContent = `<span class="name">${node.name}</span>`;
+                    }
+                    
+                    contentHtml = `
+                        <span class="icon ml-5">${icon}</span>
+                        ${fileContent}
+                    `;
+                }
+                div.innerHTML = contentHtml;
+                li.appendChild(div);
+
+                if (isFolder) {
+                    const childrenUl = renderTree(node.children, level + 1);
+                    li.appendChild(childrenUl);
+                }
+                
+                ul.appendChild(li);
+            });
+            return ul;
+        }
+
+        /**
+         * 主函数：构建文件树
+         */
+        async function buildFileTree() {
+            try {
+                const response = await fetch('data.md');
+                if (!response.ok) throw new Error('无法加载 data.md');
+                const markdownText = await response.text();
+                
+                const treeData = parseMarkdownToTree(markdownText);
+                const treeElement = renderTree(treeData);
+                
+                loadingIndicator.style.display = 'none';
+                fileTreeContainer.appendChild(treeElement);
+
+            } catch (error) {
+                console.error('构建文件树失败:', error);
+                loadingIndicator.style.display = 'none';
+                fileTreeContainer.innerHTML = `<p class="text-red-500">错误：无法加载数据文件 data.md。请确保文件存在于同目录下。</p>`;
+            }
+        }
+        
+        // --- 事件监听 ---
+
+        // 点击展开/收起文件夹
+        fileTreeContainer.addEventListener('click', (e) => {
+            // 确保点击的不是链接本身
+            if (e.target.tagName === 'A') {
+                return;
+            }
+            const target = e.target.closest('.node > div');
+            if (target) {
+                target.parentElement.classList.toggle('open');
+            }
+        });
+
+        // 搜索功能
+        searchInput.addEventListener('input', () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const allItems = fileTreeContainer.querySelectorAll('li');
+            
+            if (!searchTerm) {
+                // 清空搜索时重置状态
+                allItems.forEach(item => {
+                    item.style.display = '';
+                    const nameSpan = item.querySelector('.name');
+                    if(nameSpan) {
+                       nameSpan.innerHTML = nameSpan.textContent; // 移除高亮
+                    }
+                });
+                // 恢复默认折叠状态
+                collapseAllBtn.click();
+                return;
+            }
+
+            const matchedItems = new Set();
+            
+            allItems.forEach(item => {
+                const nameSpan = item.querySelector('.name');
+                const name = nameSpan ? nameSpan.textContent.toLowerCase() : '';
+
+                if (name.includes(searchTerm)) {
+                    matchedItems.add(item);
+                    // 高亮匹配文本
+                    const originalText = nameSpan.textContent;
+                    const regex = new RegExp(searchTerm, 'gi');
+                    nameSpan.innerHTML = originalText.replace(regex, match => `<span class="highlight">${match}</span>`);
+
+                    // 展开所有父级
+                    let parent = item.parentElement;
+                    while (parent && parent !== fileTreeContainer) {
+                        if (parent.tagName === 'LI' && parent.classList.contains('node')) {
+                            parent.classList.add('open');
+                            matchedItems.add(parent);
+                        }
+                        parent = parent.parentElement;
+                    }
+                } else {
+                    // 恢复未高亮的文本
+                    if(nameSpan) nameSpan.innerHTML = nameSpan.textContent;
+                }
+            });
+
+            // 隐藏不匹配的项
+            allItems.forEach(item => {
+                if (matchedItems.has(item)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+
+        // 全部展开
+        expandAllBtn.addEventListener('click', () => {
+            fileTreeContainer.querySelectorAll('.node').forEach(node => node.classList.add('open'));
+        });
+
+        // 全部收起
+        collapseAllBtn.addEventListener('click', () => {
+            fileTreeContainer.querySelectorAll('.node').forEach(node => node.classList.remove('open'));
+        });
+
+        // 初始化
+        buildFileTree();
+    });
+    </script>
+</body>
+</html>

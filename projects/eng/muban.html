@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词默写表 (A4打印版)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<style>
+    /* --- 屏幕基本样式 (方便在浏览器里查看) --- */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f4f4f4;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+
+.page-container {
+    max-width: 21cm; /* A4 width */
+    min-height: 29.7cm; /* A4 height */
+    margin: 20px auto;
+    background: white;
+    padding: 2cm;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    box-sizing: border-box; /* 确保padding不会增加总宽度 */
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.info {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse; /* 合并边框 */
+    font-size: 14px; /* 基础字体大小 */
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+thead {
+    background-color: #f9f9f9;
+}
+
+/* 设定列宽比例 */
+th:nth-child(1), td:nth-child(1) { width: 25%; }
+th:nth-child(2), td:nth-child(2) { width: 25%; }
+th:nth-child(3), td:nth-child(3) { width: 25%; }
+th:nth-child(4), td:nth-child(4) { width: 25%; }
+
+
+/* --- 关键：打印专用样式 --- */
+@media print {
+
+    /* 使用 @page 规则定义打印页面的属性 */
+    @page {
+        size: A4; /* 定义页面大小为A4 */
+        margin: 1.5cm; /* 定义页边距 */
+    }
+
+    /* 隐藏所有在屏幕上显示但在打印时不需要的元素 */
+    body, .page-container {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        background: none !important;
+    }
+
+    /* 确保打印内容从页面顶部开始 */
+    .page-container {
+        width: 100%;
+        min-height: 0;
+        border: none;
+    }
+
+    /* 强制打印背景和颜色，虽然我们这里是黑白，但这是个好习惯 */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color: black !important; /* 确保所有字体都是黑色，节省墨水 */
+    }
+
+    /* 优化表格打印效果 */
+    table {
+        font-size: 12pt; /* 为打印设定一个合适的字体大小，pt是磅，打印的物理单位 */
+        page-break-inside: auto; /* 允许表格在需要时跨页，但我们尽量避免 */
+    }
+
+    tr {
+        page-break-inside: avoid; /* 核心！避免表格的“行”被从中间切开分页 */
+        page-break-after: auto;
+    }
+    
+    thead {
+        display: table-header-group; /* 确保如果表格跨页，表头会在每一页都重复出现 */
+    }
+
+    /* 确保表格的边框在打印时是清晰的黑色 */
+    th, td {
+        border: 1px solid #000 !important;
+        padding: 6px 8px; /* 稍微减小一点内边距以容纳更多内容 */
+    }
+    
+    /* 避免整个表格被分页，但如果内容太多，这会导致内容被截断 */
+    /* 我们不使用这个，而是让行(tr)不分页 */
+    /*
+    .page-container {
+        page-break-inside: avoid;
+    }
+    */
+}
+.print-controls {
+    text-align: center;
+    margin: 20px;
+}
+.print-controls button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* 在打印时隐藏这个按钮 */
+@media print {
+    .print-controls {
+        display: none !important;
+    }
+}
+</style>
+<body>
+
+    <div class="page-container">
+        <header>
+            <h1>单词默写表</h1>
+            <p class="info">姓名: _______________&nbsp;&nbsp;&nbsp;&nbsp;日期: _______________&nbsp;&nbsp;&nbsp;&nbsp;得分: _______________</p>
+        </header>
+
+<main>
+    <table id="word-table">
+        <thead>
+            <tr>
+                <th>英文单词 (English)</th>
+                <th>默写中文 (Chinese)</th>
+                <th>中文释义 (Meaning)</th>
+                <th>默写英文 (English)</th>
+            </tr>
+        </thead>
+        <tbody id="word-tbody">
+        </tbody>
+    </table>
+</main>
+    </div>
+<div class="print-controls">
+        <button onclick="prepareAndPrint()">智能打印</button>
+    </div>
+
+<script>
+    function prepareAndPrint() {
+    const table = document.getElementById('word-table');
+    const container = document.querySelector('.page-container');
+    
+    // A4纸在96 DPI下的像素高度约为 1123px。我们留出边距，设定一个阈值。
+    // 29.7cm - 1.5cm*2 = 26.7cm。 26.7cm * (96 / 2.54) ≈ 1008px
+    const maxHeight = 1000; 
+
+    // 从一个合理的字体大小开始
+    let currentFontSize = 25; // 对应CSS中的12pt
+    table.style.fontSize = currentFontSize + 'pt';
+
+    // 检查内容高度。如果超过阈值，就逐步减小字体大小
+    // container.scrollHeight 是内容的实际高度
+    while (container.scrollHeight > maxHeight && currentFontSize > 7) {
+        currentFontSize -= 0.5; // 每次减小0.5pt
+        table.style.fontSize = currentFontSize + 'pt';
+        console.log(`内容过高，调整字体大小为: ${currentFontSize}pt`);
+    }
+
+    // 检查完后，调用浏览器打印功能
+    window.print();
+
+    // 打印结束后，恢复原来的字体大小，以免影响屏幕显示
+    setTimeout(() => {
+        table.style.fontSize = ''; // 清除内联样式，恢复到CSS定义的样式
+    }, 500);
+}
+
+// --- 动态加载数据并渲染到模板 ---
+(function() {
+    const payload = decodeFromUrl();
+    if (payload && Array.isArray(payload.words)) {
+        renderWords(payload.words);
+    }
+
+    function decodeFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const data = params.get('data');
+        if (!data) return null;
+        try {
+            const binary = atob(decodeURIComponent(data));
+            const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+            const json = new TextDecoder().decode(bytes);
+            return JSON.parse(json);
+        } catch (e) {
+            console.error('数据解码失败: ', e);
+            return null;
+        }
+    }
+
+    function renderWords(rows) {
+        const tbody = document.getElementById('word-tbody');
+        tbody.innerHTML = '';
+        rows.forEach(item => {
+            const tr = document.createElement('tr');
+            const tdEn1 = document.createElement('td');
+            const tdCn1 = document.createElement('td');
+            const tdCn2 = document.createElement('td');
+            const tdEn2 = document.createElement('td');
+
+            tdEn1.textContent = item.english || '';
+            tdCn1.textContent = '';
+            tdCn2.textContent = item.chinese || '';
+            tdEn2.textContent = '';
+
+            tr.appendChild(tdEn1);
+            tr.appendChild(tdCn1);
+            tr.appendChild(tdCn2);
+            tr.appendChild(tdEn2);
+            tbody.appendChild(tr);
+        });
+    }
+})();
+</script>
+</body>
+</html>

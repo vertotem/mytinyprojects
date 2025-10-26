@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS 主题演示 / CSS Themes Demo</title>
+    <!-- 切换主题：改变下面的 href 值来体验不同主题 -->
+    <!-- Change theme: modify the href value below to try different themes -->
+    <link rel="stylesheet" href="pie-web.css">
+    
+    <style>
+        /* 主题切换器样式 */
+        .theme-switcher {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-width: 200px;
+        }
+        
+        .theme-switcher select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .theme-switcher h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        @media (max-width: 768px) {
+            .theme-switcher {
+                position: static;
+                max-width: 100%;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 主题切换器 -->
+    <div class="theme-switcher">
+        <h4>选择主题 / Select Theme</h4>
+        <select id="themeSelector" onchange="changeTheme(this.value)">
+            <option value="pie-web.css">Pie Light</option>
+            <option value="pie-dark-web.css">Pie Dark</option>
+            <option value="notion-light-classic-web.css">Notion Light Classic</option>
+            <option value="notion-light-enhanced-web.css">Notion Light Enhanced</option>
+            <option value="notion-dark-classic-web.css">Notion Dark Classic</option>
+            <option value="notion-dark-enhanced-web.css">Notion Dark Enhanced</option>
+            <option value="notion-darker-classic-web.css">Notion Darker Classic</option>
+            <option value="notion-darker-enhanced-web.css">Notion Darker Enhanced</option>
+            <option value="latex-web.css">LaTeX Light</option>
+            <option value="latex-dark-web.css">LaTeX Dark</option>
+            <option value="pixyll-web.css">Pixyll</option>
+            <option value="newsprint-web.css">Newsprint</option>
+            <option value="pku-web.css">PKU</option>
+            <option value="zj-web.css">ZJ</option>
+            <option value="nexmoe.css">Nexmoe</option>
+            <option value="sakura.css">Sakura</option>
+        </select>
+    </div>
+
+    <!-- 正文内容 -->
+    <h1>CSS 主题演示页面</h1>
+    
+    <p>这是一个用于演示各种 CSS 主题的示例页面。通过右上角的下拉菜单，您可以实时切换不同的主题风格。</p>
+    
+    <p>This is a demo page for showcasing various CSS themes. Use the dropdown menu in the top-right corner to switch between different theme styles in real-time.</p>
+    
+    <h2>一级标题 / Second Level Heading</h2>
+    
+    <p>段落文本示例。这些主题都经过精心设计，适用于博客、文档、学术论文等多种场景。每个主题都有独特的排版风格和配色方案。</p>
+    
+    <p>Sample paragraph text. These themes are carefully designed for blogs, documentation, academic papers, and more. Each theme has its unique typography and color scheme.</p>
+    
+    <h3>二级标题 / Third Level Heading</h3>
+    
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+    
+    <h4>三级标题 / Fourth Level Heading</h4>
+    
+    <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+    
+    <h5>四级标题 / Fifth Level Heading</h5>
+    <h6>五级标题 / Sixth Level Heading</h6>
+    
+    <h2>列表示例 / Lists Example</h2>
+    
+    <h3>无序列表 / Unordered List</h3>
+    <ul>
+        <li>第一项 / First item</li>
+        <li>第二项 / Second item
+            <ul>
+                <li>子项目 2.1 / Sub-item 2.1</li>
+                <li>子项目 2.2 / Sub-item 2.2</li>
+            </ul>
+        </li>
+        <li>第三项 / Third item</li>
+    </ul>
+    
+    <h3>有序列表 / Ordered List</h3>
+    <ol>
+        <li>第一步 / Step one</li>
+        <li>第二步 / Step two</li>
+        <li>第三步 / Step three</li>
+    </ol>
+    
+    <h2>链接和强调 / Links and Emphasis</h2>
+    
+    <p>这是一个 <a href="#">链接示例</a>，这是 <strong>粗体文本</strong>，这是 <em>斜体文本</em>，这是 <mark>高亮文本</mark>。</p>
+    
+    <p>This is a <a href="#">link example</a>, this is <strong>bold text</strong>, this is <em>italic text</em>, and this is <mark>highlighted text</mark>.</p>
+    
+    <h2>引用块 / Blockquote</h2>
+    
+    <blockquote>
+        <p>这是一段引用文本。引用块通常用于引用他人的话语或者强调某段重要内容。</p>
+        <p>This is a blockquote. Blockquotes are typically used to quote someone else's words or emphasize important content.</p>
+    </blockquote>
+    
+    <h2>代码示例 / Code Example</h2>
+    
+    <p>行内代码：<code>const greeting = "Hello, World!";</code></p>
+    
+    <p>代码块示例 / Code block example:</p>
+    
+    <pre><code>function greet(name) {
+    return `Hello, ${name}!`;
+}
+
+console.log(greet("World"));
+// Output: Hello, World!</code></pre>
+    
+    <h2>表格示例 / Table Example</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>主题 / Theme</th>
+                <th>类型 / Type</th>
+                <th>适用场景 / Use Case</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Pie Light</td>
+                <td>浅色 / Light</td>
+                <td>现代博客 / Modern Blog</td>
+            </tr>
+            <tr>
+                <td>Notion Dark</td>
+                <td>深色 / Dark</td>
+                <td>笔记应用 / Note App</td>
+            </tr>
+            <tr>
+                <td>LaTeX</td>
+                <td>学术 / Academic</td>
+                <td>论文文档 / Papers</td>
+            </tr>
+            <tr>
+                <td>Pixyll</td>
+                <td>极简 / Minimal</td>
+                <td>内容优先 / Content First</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <h2>水平分割线 / Horizontal Rule</h2>
+    
+    <hr>
+    
+    <h2>图片示例 / Image Example</h2>
+    
+    <p>（如果有图片的话，会在这里显示）</p>
+    <p>(Images would be displayed here if available)</p>
+    
+    <hr>
+    
+    <p><small>本演示页面展示了从 Typora 主题转换而来的通用网页 CSS 文件。所有主题都支持响应式设计和打印优化。</small></p>
+    
+    <p><small>This demo page showcases general web CSS files converted from Typora themes. All themes support responsive design and print optimization.</small></p>
+
+    <script>
+        function changeTheme(themeName) {
+            // 获取当前的 link 标签
+            const linkTag = document.querySelector('link[rel="stylesheet"]');
+            // 更改主题
+            linkTag.href = themeName;
+            // 保存到 localStorage
+            localStorage.setItem('selectedTheme', themeName);
+        }
+        
+        // 页面加载时恢复上次选择的主题
+        window.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('selectedTheme');
+            if (savedTheme) {
+                document.querySelector('link[rel="stylesheet"]').href = savedTheme;
+                document.getElementById('themeSelector').value = savedTheme;
+            }
+        });
+    </script>
+</body>
+</html>
+

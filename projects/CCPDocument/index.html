@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>中国共产党历史文献</title>
+    <link rel="stylesheet" href="./assess/docute.css">
+    
+    <!-- 引入 Heti 中文排版样式 -->
+    <link rel="stylesheet" href="./assess/heti.min.css">
+    
+    <!-- 引入思源宋体字体（使用国内镜像）-->
+    <link rel="stylesheet" href="https://fonts.googleapis.cn/css2?family=Noto+Serif+SC:wght@400;500;600;700&display=swap">
+    
+    <style>
+      /* 全局应用思源宋体 */
+      body {
+        font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Source Han Serif CN', serif;
+      }
+      
+      /* Heti 排版增强 */
+      .heti {
+        font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Source Han Serif CN', serif;
+      }
+      
+      /* 为 Docute 内容区域应用 Heti */
+      .Content, .markdown-body {
+        font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Source Han Serif CN', serif;
+      }
+      
+      .Content article, .markdown-body {
+        line-height: 2;
+        text-align: justify;
+      }
+      
+      .Content h1, .Content h2, .Content h3, .Content h4, .Content h5, .Content h6 {
+        font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Source Han Serif CN', serif;
+        font-weight: 600;
+      }
+      
+      .Content p {
+        text-indent: 2em;
+        margin: 1em 0;
+      }
+      
+      .Content p:first-child,
+      .Content h1 + p,
+      .Content h2 + p,
+      .Content h3 + p,
+      .Content h4 + p,
+      .Content h5 + p,
+      .Content h6 + p {
+        text-indent: 0;
+      }
+      
+      /* 图片不缩进，居中显示 */
+      .Content p img,
+      .Content img {
+        text-indent: 0;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 100%;
+        height: auto;
+      }
+      
+      /* 包含图片的段落不缩进 */
+      .Content p:has(img) {
+        text-indent: 0;
+        text-align: center;
+      }
+      
+      /* 侧边栏和搜索框字体 */
+      .Sidebar, .sidebar-search, .search-result-item {
+        font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Source Han Serif CN', serif;
+      }
+      
+      /* 侧边栏搜索框样式 */
+      .sidebar-search {
+        padding: 1rem;
+        margin: 0.5rem;
+        background: #fff;
+        border: 2px solid #000;
+        border-radius: 6px;
+      }
+      
+      .search-input-wrapper {
+        position: relative;
+      }
+      
+      .search-input-wrapper input {
+        width: 100%;
+        padding: 0.6rem 2.5rem 0.6rem 0.75rem;
+        background: #fff;
+        border: 2px solid #000;
+        border-radius: 4px;
+        color: #000;
+        font-size: 14px;
+        font-weight: 500;
+        outline: none;
+        transition: all 0.2s;
+      }
+      
+      .search-input-wrapper input:focus {
+        background: #f5f5f5;
+        border-color: #000;
+        box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+      }
+      
+      .search-input-wrapper input::placeholder {
+        color: #666;
+        font-weight: 400;
+      }
+      
+      .search-icon {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #000;
+        pointer-events: none;
+        font-size: 16px;
+      }
+      
+      .search-results {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+        background: #fff;
+        border: 2px solid #000;
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        margin: -0.5rem 0.5rem 0.5rem 0.5rem;
+      }
+      
+      .search-results.active {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+      }
+      
+      .search-result-item {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      
+      .search-result-item:hover {
+        background: #f0f0f0;
+      }
+      
+      .search-result-item:last-child {
+        border-bottom: none;
+      }
+      
+      .search-result-title {
+        color: #000;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        display: block;
+      }
+      
+      .search-result-content {
+        color: #333;
+        font-size: 12px;
+        line-height: 1.5;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      
+      .search-result-content mark {
+        background: #000;
+        color: #fff;
+        padding: 2px 4px;
+        border-radius: 2px;
+        font-weight: 600;
+      }
+      
+      .search-stats {
+        padding: 0.5rem 1rem;
+        color: #666;
+        font-size: 12px;
+        font-weight: 500;
+        background: #f5f5f5;
+        border-bottom: 1px solid #e0e0e0;
+      }
+      
+      .no-results {
+        padding: 2rem 1rem;
+        text-align: center;
+        color: #666;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="docute"></div>
+    <script src="./assess/docute.js"></script>
+    <script src="./assess/fuse.js@6.6.2"></script>
+    
+    <!-- 引入 Heti.js -->
+    <script src="./assess/heti-addon.min.js"></script>
+    
+    <script>
+      new Docute({
+        target: '#docute',
+        darkTheme: true,
+        sidebar: [
+          {
+            title: '历史文献',
+            children: [
+              {
+                title: '中国共产党创立时期 (1921.3—1923.5)',
+                link: '/article/1921-1923/README.md'
+              },
+              {
+                title: '大革命时期 (1923.6—1927.7)',
+                link: '/article/1923-1927/README.md'
+              },
+              {
+                title: '土地革命战争时期(1927.8—1937.7)',
+                link: '/article/1927-1937/README.md'
+              },
+              {
+                title: '抗日战争时期 (1937.7—1945.8)',
+                link: '/article/1937-1945/README.md'
+              },
+              {
+                title: '全国解放战争时期 (1949.10—1956.9)',
+                link: '/article/1945-1949/README.md'
+              },
+              {
+                title: '基本完成社会主义改造时期(1949.10—1956.9)',
+                link: '/article/1949-1956/README.md'
+              },
+              {
+                title: '开始全面建设社会主义时期(1956.8—1966.4)',
+                link: '/article/1956-1966/README.md'
+              },
+              {
+                title: '社会主义现代化建设新时期 (1976.10—2006.3)',
+                link: '/article/1976-2006/README.md'
+              }
+            ]
+          },
+          {
+            title: '书籍',
+            children: [
+              {
+                title: '《中国共产党抗日文件选编》',
+                link: '/books/book-1.md'
+              }
+            ]
+          }
+        ]
+      })
+      
+      // 搜索功能
+      let fuse;
+      let searchIndex = [];
+      
+      // 加载搜索索引
+      fetch('./search-index.json')
+        .then(response => response.json())
+        .then(data => {
+          searchIndex = data;
+          // 初始化Fuse.js
+          fuse = new Fuse(searchIndex, {
+            keys: ['title', 'fullContent'],
+            threshold: 0.3,
+            includeScore: true,
+            minMatchCharLength: 2,
+            ignoreLocation: true
+          });
+          console.log('搜索索引加载完成，共' + searchIndex.length + '个文档');
+        })
+        .catch(err => {
+          console.error('加载搜索索引失败:', err);
+        });
+      
+      // 等待侧边栏加载完成后注入搜索框
+      setTimeout(() => {
+        const sidebar = document.querySelector('.Sidebar');
+        if (sidebar) {
+          // 创建搜索框HTML
+          const searchHTML = `
+            <div class="sidebar-search">
+              <div class="search-input-wrapper">
+                <input type="text" id="search-input" placeholder="搜索文档..." autocomplete="off">
+                <span class="search-icon">🔍</span>
+              </div>
+            </div>
+            <div class="search-results" id="search-results"></div>
+          `;
+          
+          // 在侧边栏顶部插入搜索框
+          sidebar.insertAdjacentHTML('afterbegin', searchHTML);
+          
+          // 绑定搜索事件
+          const searchInput = document.getElementById('search-input');
+          const searchResults = document.getElementById('search-results');
+          
+          let searchTimeout;
+          searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            
+            // 防抖
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+              if (query.length === 0) {
+                searchResults.classList.remove('active');
+                searchResults.innerHTML = '';
+                return;
+              }
+              
+              if (!fuse) {
+                searchResults.classList.add('active');
+                searchResults.innerHTML = '<div class="no-results">搜索索引加载中...</div>';
+                return;
+              }
+              
+              // 执行搜索
+              const results = fuse.search(query);
+              
+              if (results.length === 0) {
+                searchResults.classList.add('active');
+                searchResults.innerHTML = '<div class="no-results">未找到相关结果</div>';
+                return;
+              }
+              
+              // 显示搜索结果
+              let html = `<div class="search-stats">找到 ${results.length} 个结果</div>`;
+              
+              html += results.slice(0, 30).map(result => {
+                const item = result.item;
+                // 高亮搜索关键词
+                let content = item.content;
+                const regex = new RegExp(`(${query})`, 'gi');
+                content = content.replace(regex, '<mark>$1</mark>');
+                
+                return `
+                  <div class="search-result-item" onclick="navigateToDoc('${item.path}')">
+                    <span class="search-result-title">${item.title}</span>
+                    <div class="search-result-content">${content}</div>
+                  </div>
+                `;
+              }).join('');
+              
+              searchResults.classList.add('active');
+              searchResults.innerHTML = html;
+            }, 300);
+          });
+          
+          // Ctrl+K 快捷键聚焦搜索框
+          document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+              e.preventDefault();
+              searchInput.focus();
+            }
+          });
+        }
+      }, 1000);
+      
+      // 导航到文档
+      function navigateToDoc(path) {
+        window.location.hash = path;
+      }
+      
+      // 初始化 Heti 排版
+      function initHeti() {
+        const contentArea = document.querySelector('.Content article');
+        if (contentArea && typeof Heti !== 'undefined') {
+          // 为内容区域添加 heti 类
+          contentArea.classList.add('heti');
+          
+          // 创建 Heti 实例并应用排版
+          const heti = new Heti('.heti');
+          heti.autoSpacing(); // 自动为中西文之间添加间距
+        }
+      }
+      
+      // 监听内容变化，自动应用 Heti
+      setTimeout(() => {
+        // 初次加载
+        initHeti();
+        
+        // 监听 URL 哈希变化（路由变化）
+        window.addEventListener('hashchange', () => {
+          setTimeout(initHeti, 300);
+        });
+        
+        // 使用 MutationObserver 监听 DOM 变化
+        const observer = new MutationObserver(() => {
+          initHeti();
+        });
+        
+        const docuteEl = document.getElementById('docute');
+        if (docuteEl) {
+          observer.observe(docuteEl, {
+            childList: true,
+            subtree: true
+          });
+        }
+      }, 1500);
+    </script>
+  </body>
+</html>

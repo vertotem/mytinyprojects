@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>B-HU 文件预览服务</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="./include/jquery_ui/themes/start/jquery-ui.min.css">
+  <script src="./include/jquery/jquery-1.12.4.min.js"></script>
+  <script src="./include/jquery_ui/jquery-ui.min.js"></script>
+  <!-- ################################ For files reder ###############################-->
+  <!--PDF-->
+  <link rel="stylesheet" href="./include/pdf/pdf.viewer.css">
+  <script src="./include/pdf/pdf.js"></script>
+  <!--Docs-->
+  <script src="./include/docx/jszip-utils.js"></script>
+  <script src="./include/docx/mammoth.browser.min.js"></script>
+  <!--PPTX-->
+  <link rel="stylesheet" href="./include/PPTXjs/css/pptxjs.css">
+  <link rel="stylesheet" href="./include/PPTXjs/css/nv.d3.min.css">
+  <script type="text/javascript" src="./include/PPTXjs/js/filereader.js"></script>
+  <script type="text/javascript" src="./include/PPTXjs/js/d3.min.js"></script>
+  <script type="text/javascript" src="./include/PPTXjs/js/nv.d3.min.js"></script>
+  <script type="text/javascript" src="./include/PPTXjs/js/pptxjs.js"></script>
+  <script type="text/javascript" src="./include/PPTXjs/js/divs2slides.js"></script>
+  <!--All Spreadsheet -->
+  <link rel="stylesheet" href="./include/SheetJS/handsontable.full.min.css">
+  <script type="text/javascript" src="./include/SheetJS/handsontable.full.min.js"></script>
+  <script type="text/javascript" src="./include/SheetJS/xlsx.full.min.js"></script>
+  <!--Image viewer-->
+  <link rel="stylesheet" href="./include/verySimpleImageViewer/css/jquery.verySimpleImageViewer.css">
+  <script type="text/javascript" src="./include/verySimpleImageViewer/js/jquery.verySimpleImageViewer.js"></script>
+  <!--officeToHtml-->
+  <script src="./include/officeToHtml/officeToHtml.js"></script>
+  <link rel="stylesheet" href="./include/officeToHtml/officeToHtml.css">
+</head>
+<body>
+    <h1>B-HU 文件预览服务</h1>
+    <h2>本地文件预览</h2>
+    <p id="file_p">File: <a href="#" id="a_file"></a><input type="file" id="select_file" />
+    <div id="resolte-contaniner-1"></div>
+    <script>
+        (function ($) {
+    $("#resolte-contaniner-1").officeToHtml({
+                  inputObjId: "select_file"
+                })}(jQuery));
+</script>
+<h2>在线文件预览</h2>
+<input type="text" id="url_input">
+<button onclick="storeUrl()">Preview</button>
+<div id="resolte-contaniner-2"></div>
+<script>
+var file_path = "";
+function storeUrl() {
+    file_path = document.getElementById("url_input").value;
+    $("#resolte-contaniner-2").officeToHtml({
+   url: file_path
+});
+  }
+
+window.onload = function() {
+var queryString = window.location.search;
+var urlParams = new URLSearchParams(queryString);
+if (urlParams.has("file")) {
+    file_path = urlParams.get("file");
+    $("#resolte-contaniner-2").officeToHtml({
+   url: file_path
+});
+}
+}
+</script>
+</body>
+</html>

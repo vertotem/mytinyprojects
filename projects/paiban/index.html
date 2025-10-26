@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WORD文件在线排版</title>
+    <!-- 引入依赖库 -->
+    <!-- docx.js引用 -->
+    <script src="./index.js"></script> 
+    <script src="./marked.min.js"></script>
+    <script src="./FileSaver.min.js"></script>
+    <!-- KaTeX支持LaTeX公式 -->
+    <link rel="stylesheet" href="./katex.min.css">
+    <script defer src="./katex.min.js"></script>
+    <link rel="stylesheet" href="./nexmoe.css">
+</head>
+<body>
+    <h1>WORD文件在线排版</h1>
+    <p style="text-align: right;">Made with ❤️ by <a href="https://mo.b-hu.org/">梦貘</a>&Claude</p>
+    <article>
+        <details>
+        <summary>点我查看使用说明</summary>
+        <div style="margin: 5%;">
+            <h2>排版语法说明</h2>
+
+            <h3>1、标题</h3>
+            <p>使用<code>#</code>表示标题，数量决定标题级别，例如：</p>
+            <ul>
+              <li><code># 一级标题</code></li>
+              <li><code>## 二级标题</code></li>
+              <li><code>### 三级标题</code></li>
+            </ul>
+            <p>最多支持5个<code>#</code></p>
+          
+            <h3>2、段落</h3>
+            <p>直接输入文本即可形成段落，段落之间留一行空行。</p>
+          
+            <h3>3、列表</h3>
+            <ul>
+              <li>有序列表：使用数字和点（例如<code>1. 列表项</code>）。</li>
+              <li>无序列表：使用<code>• </code>或<code>- </code>开头的行。</li>
+            </ul>
+            <p>注意：数字、点和横杠与文本之间均需要有一个空格</p>
+          
+            <h3>4、文本格式</h3>
+            <ul>
+              <li><strong>加粗</strong>：使用<code>**文本**</code>或<code>__文本__</code>。</li>
+              <li><em>斜体</em>：使用<code>*文本*</code>或<code>_文本_</code>。</li>
+              <li><del>删除线</del>：使用<code>~~文本~~</code>。</li>
+            </ul>
+          
+            <h3>5、对齐和下划线</h3>
+            <ul>
+              <li><strong>居中</strong>：使用语法<code>@center{内容}</code>。</li>
+              <li><strong>右对齐</strong>：使用语法<code>@right{内容}</code>。</li>
+              <li><strong>下划线</strong>：使用语法<code>@underline{内容}</code>。</li>
+            </ul>
+
+            <h3>6、LaTeX数学公式</h3>
+            <ul>
+              <li><strong>行内公式</strong>：
+                <ul>
+                  <li>使用<code>$公式$</code>，例如<code>$E=mc^2$</code></li>
+                  <li>使用<code>\(公式\)</code>，例如<code>\((9+9)\div3\)</code></li>
+                </ul>
+              </li>
+              <li><strong>行间公式</strong>：
+                <ul>
+                  <li>使用<code>$$公式$$</code>，例如<code>$$\int_0^1 x^2 dx$$</code></li>
+                  <li>使用<code>\[公式\]</code>，例如<code>\[\sum_{i=1}^n i = \frac{n(n+1)}{2}\]</code></li>
+                </ul>
+              </li>
+            </ul>
+
+            <h3>7、表格</h3>
+            <p>使用标准Markdown表格语法：</p>
+            <pre><code>| 列1 | 列2 | 列3 |
+|-----|-----|-----|
+| 内容1 | 内容2 | 内容3 |
+| 内容4 | 内容5 | 内容6 |</code></pre>
+          
+            <h3>8、注意事项</h3>
+            <ul>
+              <li>请尽量使用简单的排版语法，处理复杂的混排时可能会出错。</li>
+              <li>生成的文件名自动附加<code>.docx</code>后缀，所以请在输入框中仅填写文件名。</li>
+              <li>默认的排版大致遵循中国政府的公文版式。</li>
+            </ul>
+        </div>
+    </details>
+    </article>
+    <br/><br/>
+    <textarea id="markdown-input" placeholder="输入待排版的文本..." style="width: 100%; height: 50vh;"></textarea><br/>
+    <input type="text" id="filename-input" placeholder="输入文件名（不包括.docx）">
+    <select id="template-select">
+        <option value="default">默认模板</option>
+        <option value="compact">紧凑模板</option>
+        <option value="two-column">双栏模板</option>
+    </select>
+    <button onclick="convertToDocx()">生成文档</button>
+    <hr/>
+    <footer style="text-align: center;">
+        <a href="https://smms.app/image/flXKbUcOzQGWVhC">如果此工具对你有帮助，或许考虑打赏我一下嘛？<br/>给孩子买点零食吃.jpg</a>
+    </footer>
+    <script>
+        let templates;
+
+        // 加载模板
+        fetch('templates.json')
+            .then(response => response.json())
+            .then(data => {
+                templates = data;
+            })
+            .catch(error => console.error('Error loading templates:', error));
+
+        async function convertToDocx() {
+            try {
+                const markdown = document.getElementById('markdown-input').value;
+                const filename = document.getElementById('filename-input').value || 'document';
+                const selectedTemplate = document.getElementById('template-select').value;
+                const template = templates[selectedTemplate];
+
+                if (!markdown) {
+                    alert('请输入Markdown文本');
+                    return;
+                }
+
+                // 处理LaTeX公式
+                const processedMarkdown = processLatexFormulas(markdown);
+                
+                // 使用marked.js完整解析
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true,
+                    tables: true
+                });
+                
+                const tokens = marked.lexer(processedMarkdown);
+                const children = [];
+
+                for (let token of tokens) {
+                    switch(token.type) {
+                        case 'heading':
+                            const headingParagraph = new window.docx.Paragraph({
+                                children: [
+                                    new window.docx.TextRun({
+                                        text: token.text,
+                                        size: template[`h${token.depth}`].size,
+                                        font: template[`h${token.depth}`].font,
+                                        bold: template[`h${token.depth}`].bold
+                                    })
+                                ],
+                                alignment: template[`h${token.depth}`].alignment ? window.docx.AlignmentType[template[`h${token.depth}`].alignment] : undefined,
+                                spacing: template[`h${token.depth}`].spacing
+                            });
+                            children.push(headingParagraph);
+                            break;
+
+                        case 'paragraph':
+                            const processedParagraphs = processText(token.text, template);
+                            processedParagraphs.forEach(p => children.push(p));
+                            break;
+
+                        case 'list':
+                            processListItems(token, template, children);
+                            break;
+
+                        case 'table':
+                            processTable(token, template, children);
+                            break;
+
+                        case 'space':
+                            children.push(new window.docx.Paragraph({
+                                children: [],
+                                spacing: { before: 120, after: 120 }
+                            }));
+                            break;
+                            
+                        case 'code':
+                            children.push(new window.docx.Paragraph({
+                                children: [
+                                    new window.docx.TextRun({
+                                        text: token.text,
+                                        size: template.paragraph.size,
+                                        font: "Consolas",
+                                        color: "666666"
+                                    })
+                                ],
+                                spacing: template.paragraph.spacing,
+                                indent: { left: 720 }
+                            }));
+                            break;
+
+                        case 'blockquote':
+                            token.tokens.forEach(subToken => {
+                                if (subToken.type === 'paragraph') {
+                                    children.push(new window.docx.Paragraph({
+                                        children: processInlineFormatting(subToken.text, template),
+                                        spacing: template.paragraph.spacing,
+                                        indent: { left: 720 },
+                                        border: {
+                                            left: { color: "CCCCCC", space: 1, size: 6 }
+                                        }
+                                    }));
+                                }
+                            });
+                            break;
+                    }
+                }
+
+                const doc = new window.docx.Document({
+                    sections: [{
+                        properties: {
+                            page: {
+                                margin: {
+                                    top: 1440,
+                                    right: 1440,
+                                    bottom: 1440,
+                                    left: 1440,
+                                },
+                            },
+                            columns: template.columns ? {
+                                count: template.columns.count,
+                                space: template.columns.spacing
+                            } : undefined
+                        },
+                        children: children
+                    }]
+                });
+
+                const blob = await window.docx.Packer.toBlob(doc);
+                saveAs(blob, `${filename}.docx`);
+
+            } catch (error) {
+                console.error('转换过程中出现错误:', error);
+                alert('转换过程中出现错误，请查看控制台了解详情');
+            }
+        }
+        
+        function processListItems(token, template, children) {
+            token.items.forEach((item, index) => {
+                const listItemPrefix = token.ordered ? `${index + 1}. ` : '• ';
+                const listItemParagraph = new window.docx.Paragraph({
+                    children: [
+                        new window.docx.TextRun({
+                            text: listItemPrefix,
+                            size: template.list.size,
+                            font: template.list.font,
+                        }),
+                        ...processInlineFormatting(item.text, template)
+                    ],
+                    spacing: template.list.spacing,
+                    indent: {
+                        left: template.list.indent.left,
+                        hanging: template.list.indent.hanging
+                    }
+                });
+                children.push(listItemParagraph);
+            });
+        }
+
+        function processText(text, template) {
+            if (!text) return [new window.docx.Paragraph({
+                children: [],
+                spacing: template.paragraph.spacing,
+                indent: template.paragraph.indent
+            })];
+
+            const paragraphs = [];
+            let currentTextRuns = [];
+
+            const regex = /@(center|right|underline)\{([^}]+)\}|([^@]+)/g;
+            let match;
+
+            while ((match = regex.exec(text)) !== null) {
+                if (match[1]) {  // 匹配到特殊格式
+                    const [_, format, content] = match;
+
+                    if (currentTextRuns.length > 0) {
+                        paragraphs.push(new window.docx.Paragraph({
+                            children: currentTextRuns,
+                            spacing: template.paragraph.spacing,
+                            indent: template.paragraph.indent
+                        }));
+                        currentTextRuns = [];
+                    }
+
+                    switch (format) {
+                        case 'center':
+                            paragraphs.push(new window.docx.Paragraph({
+                                children: processInlineFormatting(content, template),
+                                alignment: window.docx.AlignmentType.CENTER,
+                                spacing: template.paragraph.spacing
+                            }));
+                            break;
+                        case 'right':
+                            paragraphs.push(new window.docx.Paragraph({
+                                children: processInlineFormatting(content, template),
+                                alignment: window.docx.AlignmentType.RIGHT,
+                                spacing: template.paragraph.spacing
+                            }));
+                            break;
+                        case 'underline':
+                            currentTextRuns.push(...processInlineFormatting(content, template).map(run => ({...run, underline: {}})));
+                            break;
+                    }
+                } else if (match[3]) {  // 匹配到普通文本
+                    currentTextRuns.push(...processInlineFormatting(match[3], template));
+                }
+            }
+
+            if (currentTextRuns.length > 0) {
+                paragraphs.push(new window.docx.Paragraph({
+                    children: currentTextRuns,
+                    spacing: template.paragraph.spacing,
+                    indent: template.paragraph.indent
+                }));
+            }
+
+            return paragraphs;
+        }
+
+        function processInlineFormatting(text, template) {
+            const textRuns = [];
+            // 增强的正则表达式支持更多格式
+            const regex = /(\*\*.*?\*\*|__.*?__|~~.*?~~|\*.*?\*|_.*?_|`.*?`|[^*_~`]+)/g;
+            let match;
+
+            while ((match = regex.exec(text)) !== null) {
+                const segment = match[0];
+                if ((segment.startsWith('**') && segment.endsWith('**')) || 
+                    (segment.startsWith('__') && segment.endsWith('__'))) {
+                    textRuns.push(new window.docx.TextRun({
+                        text: segment.slice(2, -2),
+                        size: template.paragraph.size,
+                        font: template.paragraph.font,
+                        bold: true
+                    }));
+                } else if ((segment.startsWith('*') && segment.endsWith('*')) || 
+                          (segment.startsWith('_') && segment.endsWith('_'))) {
+                    textRuns.push(new window.docx.TextRun({
+                        text: segment.slice(1, -1),
+                        size: template.paragraph.size,
+                        font: template.paragraph.font,
+                        italics: true
+                    }));
+                } else if (segment.startsWith('~~') && segment.endsWith('~~')) {
+                    textRuns.push(new window.docx.TextRun({
+                        text: segment.slice(2, -2),
+                        size: template.paragraph.size,
+                        font: template.paragraph.font,
+                        strike: true
+                    }));
+                } else if (segment.startsWith('`') && segment.endsWith('`')) {
+                    textRuns.push(new window.docx.TextRun({
+                        text: segment.slice(1, -1),
+                        size: template.paragraph.size - 2,
+                        font: "Consolas",
+                        color: "666666"
+                    }));
+                } else if (segment.trim()) {
+                    textRuns.push(new window.docx.TextRun({
+                        text: segment,
+                        size: template.paragraph.size,
+                        font: template.paragraph.font
+                    }));
+                }
+            }
+
+            return textRuns;
+        }
+
+        // 处理LaTeX公式
+        function processLatexFormulas(text) {
+            // 处理行间公式 $$...$$ 
+            text = text.replace(/\$\$(.*?)\$\$/g, (match, formula) => {
+                try {
+                    return `[数学公式: ${formula.trim()}]`;
+                } catch (e) {
+                    return match;
+                }
+            });
+
+            // 处理LaTeX原生行间公式 \[...\]
+            text = text.replace(/\\\[(.*?)\\\]/g, (match, formula) => {
+                try {
+                    return `[数学公式: ${formula.trim()}]`;
+                } catch (e) {
+                    return match;
+                }
+            });
+
+            // 处理行内公式 $...$
+            text = text.replace(/\$([^$]+)\$/g, (match, formula) => {
+                try {
+                    return `[公式: ${formula.trim()}]`;
+                } catch (e) {
+                    return match;
+                }
+            });
+
+            // 处理LaTeX原生行内公式 \(...\)
+            text = text.replace(/\\\((.*?)\\\)/g, (match, formula) => {
+                try {
+                    return `[公式: ${formula.trim()}]`;
+                } catch (e) {
+                    return match;
+                }
+            });
+
+            return text;
+        }
+
+        // 处理表格
+        function processTable(token, template, children) {
+            if (!token.header || !token.rows) return;
+
+            const tableConfig = template.table || {
+                size: 24,
+                font: "FangSong",
+                border: { color: "000000", size: 1 },
+                header: { size: 24, font: "SimHei", bold: true, background: "E0E0E0" }
+            };
+
+            // 创建表格行
+            const tableRows = [];
+
+            // 表头
+            if (token.header.length > 0) {
+                const headerCells = token.header.map(cell => 
+                    new window.docx.TableCell({
+                        children: [new window.docx.Paragraph({
+                            children: [new window.docx.TextRun({
+                                text: cell.text || cell,
+                                size: tableConfig.header.size,
+                                font: tableConfig.header.font,
+                                bold: tableConfig.header.bold
+                            })],
+                            alignment: window.docx.AlignmentType.CENTER
+                        })],
+                        shading: {
+                            fill: tableConfig.header.background
+                        },
+                        borders: {
+                            top: { style: window.docx.BorderStyle.SINGLE, size: tableConfig.border.size, color: tableConfig.border.color },
+                            bottom: { style: window.docx.BorderStyle.SINGLE, size: tableConfig.border.size, color: tableConfig.border.color },
+                            left: { style: window.docx.BorderStyle.SINGLE, size: tableConfig.border.size, color: tableConfig.border.color },
+                            right: { style: window.docx.BorderStyle.SINGLE, size: tableConfig.border.size, color: tableConfig.border.color }
+                        }
+                    })
+                );
+                tableRows.push(new window.docx.TableRow({
+                    children: headerCells
+                }));
+            }
+
+            // 表格内容行
+            token.rows.forEach((row, rowIndex) => {
+                const cells = row.map(cell => 
+                    new window.docx.TableCell({
+                        children: [new window.docx.Paragraph({
+                            children: processInlineFormatting(cell.text || cell, template)
+                        })],
+                        borders: {
+                            top: { style: window.docx.BorderStyle.SINGLE, size: tableConfig.border.size, color: tableConfig.border.color },
+                            bottom: { style: window.docx.BorderStyle.SINGLE, size: tableConfig.border.size, color: tableConfig.border.color },
+                            left: { style: window.docx.BorderStyle.SINGLE, size: tableConfig.border.size, color: tableConfig.border.color },
+                            right: { style: window.docx.BorderStyle.SINGLE, size: tableConfig.border.size, color: tableConfig.border.color }
+                        },
+                        shading: rowIndex % 2 === 0 ? { fill: "FFFFFF" } : { fill: "F8F8F8" }
+                    })
+                );
+                tableRows.push(new window.docx.TableRow({
+                    children: cells
+                }));
+            });
+
+            // 创建表格
+            const table = new window.docx.Table({
+                rows: tableRows,
+                width: {
+                    size: 100,
+                    type: window.docx.WidthType.PERCENTAGE
+                },
+                layout: window.docx.TableLayoutType.AUTOFIT
+            });
+
+            children.push(table);
+            
+            // 添加表格后的空行
+            children.push(new window.docx.Paragraph({
+                children: [],
+                spacing: tableConfig.spacing
+            }));
+        }
+    </script>
+</body>
+</html>

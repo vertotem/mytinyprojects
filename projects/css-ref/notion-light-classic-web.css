@@ -1,0 +1,263 @@
+/* Notion Light Classic Web Theme
+ * Converted from Typora Notion Light theme for general web use
+ * Inspired by Notion's light theme
+ */
+
+:root {
+  /* Text and Background */
+  --bg-color: #ffffff;
+  --text-color: #37352f;
+  --secondary-text-color: #73726e;
+  --text-accent-color: #e9e9e7;
+  --bg-color-dark: #f7f6f3;
+  
+  /* Code colors */
+  --code-fence-text-color: #ec5757;
+  --code-fence-bg-color: #f7f6f3;
+  --code-color: #9a6e3a;
+  
+  /* Blockquote */
+  --blockquote-bg-color: #ffffff;
+  --blockquote-accent-color: #37352f;
+  --blockquote-text-color: #37352f;
+  
+  /* Other colors */
+  --light-trait-100: #38352f;
+  --link-color: #37352f;
+  --border-color: #e9e9e7;
+  
+  /* Docute变量覆盖 */
+  --page-background: #ffffff;
+  --main-background: #ffffff;
+  --header-background: #ffffff;
+  --sidebar-background: #ffffff;
+  
+  /* Fonts */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+  --monospace: 'SF Mono Medium', 'Fira Code', 'Cousine', 'Consolas', monospace;
+}
+
+/* 统一容器宽度与默认主题一致 */
+.Wrap {
+  max-width: 1180px !important;
+}
+
+.layout-wide .Content {
+  max-width: 770px !important;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  line-height: 1.6;
+  margin: 0 auto;
+  padding: 30px;
+  padding-bottom: 100px;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  position: relative;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+h1 {
+  padding-bottom: 0.3em;
+  font-size: 2.2em;
+  line-height: 1.3;
+  color: var(--light-trait-100);
+}
+
+h2 {
+  padding-bottom: 0.3em;
+  font-size: 1.75em;
+  line-height: 1.225;
+  color: var(--light-trait-100);
+}
+
+h3 {
+  font-size: 1.4em;
+  line-height: 1.43;
+  color: var(--light-trait-100);
+}
+
+h4 {
+  font-size: 1.2em;
+  color: var(--light-trait-100);
+}
+
+h5 {
+  font-size: 1em;
+  color: var(--light-trait-100);
+}
+
+h6 {
+  font-size: 1em;
+  color: var(--light-trait-100);
+}
+
+/* Paragraph */
+p, blockquote, ul, ol, dl, table {
+  margin: 0.8em 0;
+}
+
+/* Links */
+a {
+  color: var(--link-color);
+  text-decoration: none;
+  border-bottom: 0.05em solid;
+  border-color: var(--link-color);
+  transition: all .1s ease-in;
+}
+
+a:hover {
+  text-decoration: none;
+  opacity: 0.7;
+}
+
+/* Lists */
+ul, ol {
+  padding-left: 30px;
+}
+
+li > ol, li > ul {
+  margin: 0;
+}
+
+/* Horizontal Rule */
+hr {
+  background-color: var(--text-accent-color);
+  height: 1.5px;
+  border: none;
+  margin: 2em 0;
+}
+
+/* Blockquote */
+blockquote {
+  color: var(--blockquote-text-color);
+  margin-left: 1.75px;
+  margin-right: 0;
+  border-left: 4px solid var(--blockquote-accent-color);
+  padding: 10px 14px 7px 22px;
+  background-color: var(--blockquote-bg-color);
+}
+
+/* Tables */
+table {
+  padding: 0;
+  word-break: initial;
+  border-collapse: collapse;
+}
+
+table tr {
+  border-top: 1px solid var(--text-accent-color);
+  margin: 0;
+  padding: 0;
+}
+
+table tr:nth-child(2n) {
+  background-color: var(--bg-color-dark);
+}
+
+table tr th {
+  font-weight: bold;
+  border: 1px solid var(--text-accent-color);
+  border-bottom: 0;
+  margin: 0;
+  padding: 6px 13px;
+}
+
+table tr td {
+  border: 1px solid var(--text-accent-color);
+  margin: 0;
+  padding: 6px 13px;
+}
+
+/* Code */
+code, tt {
+  border: none;
+  color: var(--code-fence-text-color);
+  background-color: var(--code-fence-bg-color);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 0.975em;
+  font-weight: medium;
+  font-family: var(--monospace);
+}
+
+pre {
+  margin-bottom: 15px;
+  margin-top: 15px;
+  padding: 8px 12px;
+  background-color: var(--code-fence-bg-color);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: var(--monospace);
+  line-height: 1.5;
+}
+
+pre code {
+  padding: 0;
+  background-color: transparent;
+  color: inherit;
+}
+
+/* Strong and Emphasis */
+strong {
+  font-weight: bold;
+}
+
+em {
+  font-style: italic;
+}
+
+/* Mark */
+mark {
+  border-radius: 4px;
+  color: #4f3b2a;
+  font-weight: inherit;
+  background-color: #feecc8;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  margin-left: 2px;
+  margin-right: 2px;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  body {
+    padding: 20px 15px;
+  }
+  
+  h1 {
+    font-size: 1.8em;
+  }
+  
+  h2 {
+    font-size: 1.5em;
+  }
+  
+  h3 {
+    font-size: 1.25em;
+  }
+}
+

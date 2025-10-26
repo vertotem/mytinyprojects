@@ -1,0 +1,390 @@
+/* Pie Dark Web Theme
+ * Converted from Typora Pie Dark theme for general web use
+ * Dark theme variant with modern color palette
+ */
+
+/* Font Imports */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code&family=Source+Sans+Pro&display=swap');
+
+:root {
+  --primary-color: #da282a;
+  --text-color: #d9d9d9;
+  --bg-color: #272b40;
+  --border-color: #393550;
+  
+  /* 中性色 */
+  --mid-13: #ffffff;
+  --mid-12: #f5f5f5;
+  --mid-11: #f0f0f0;
+  --mid-10: #dedede;
+  --mid-9: #bfbfbf;
+  --mid-8: #a5a5a5;
+  --mid-7: #595959;
+  --mid-6: #434343;
+  --mid-5: #262626;
+  --mid-4: #1f1f1f;
+  --mid-3: #141414;
+  
+  /* 主题色 */
+  --main-10: #fff2f0;
+  --main-9: #ffd6d1;
+  --main-8: #ffb0a8;
+  --main-7: #f27f79;
+  --main-6: #e6514e;
+  --main-5: #da282a;
+  --main-4: #b3171f;
+  --main-3: #893128;
+  --main-2: #66030f;
+  --main-1: #40010b;
+  
+  /* Docute变量覆盖（暗色主题） */
+  --page-background: #272b40;
+  --main-background: #272b40;
+  --header-background: #272b40;
+  --header-text-color: #d9d9d9;
+  --sidebar-background: #272b40;
+  --sidebar-link-color: #d9d9d9;
+  --sidebar-link-active-color: #da282a;
+  --sidebar-link-arrow-color: #595959;
+  --nav-link-color: #d9d9d9;
+  --nav-link-border-color: #da282a;
+  --accent-color: #da282a;
+  --link-color: #da282a;
+  --inline-code-background: #1f1f1f;
+  --inline-code-color: #ffb0a8;
+  --code-block-background: #1f1f1f;
+  --code-block-text-color: #d9d9d9;
+  --code-block-shadow-width: 1px;
+  --code-block-shadow-color: #393550;
+  --table-header-background: #1f1f1f;
+  --table-header-color: #d9d9d9;
+  --search-icon-color: #888;
+  --search-focus-icon-color: #da282a;
+  --search-focus-border-color: #da282a;
+  --search-result-background: #1f1f1f;
+  --search-result-hover-background: #2a2a2a;
+  --highlighted-line-background: rgba(218, 40, 42, 0.1);
+  --highlighted-line-border-color: #da282a;
+  
+  /* 字体 */
+  --font-normal: 'Source Sans Pro', 'MiSans', '等距更纱黑体 SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  --font-code: 'Fira Code', Monaco, Consolas, 'MiSans', '等距更纱黑体 SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* 统一容器宽度与默认主题一致 */
+.Wrap {
+  max-width: 1180px !important;
+}
+
+.layout-wide .Content {
+  max-width: 770px !important;
+}
+
+html {
+  font-size: 14px;
+}
+
+body {
+  margin: 0 auto;
+  padding: 20px 30px 160px;
+  overflow-x: hidden;
+  font-family: var(--font-normal);
+  color: var(--mid-10);
+  background-color: var(--bg-color);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.875rem;
+  letter-spacing: 0;
+}
+
+p {
+  word-spacing: 0.05rem;
+  margin: 0.8em 0;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  position: relative;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  line-height: 1.4;
+  cursor: text;
+}
+
+h1 {
+  text-align: center;
+  padding-bottom: 0.3em;
+  font-size: 2em;
+  line-height: 1.2;
+  margin: 2.4em auto 1.2em;
+}
+
+h1::after {
+  content: '';
+  display: block;
+  margin: 0.2em auto 0;
+  width: 100px;
+  height: 2px;
+  border-bottom: 2px dashed var(--main-6);
+}
+
+h2 {
+  margin: 2em auto 1.4em;
+  padding-left: 6px;
+  line-height: 1.4;
+  font-size: 1.6em;
+  border-left: 6px solid var(--main-6);
+}
+
+h3 {
+  margin: 1.6em auto 1.2em;
+  font-size: 1.35em;
+  line-height: 1.43;
+}
+
+h3::before {
+  content: '';
+  border-radius: 50%;
+  background-color: var(--main-5);
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  vertical-align: middle;
+  line-height: 1.43;
+  margin-bottom: 0.18em;
+  margin-right: 6px;
+}
+
+h4 {
+  margin-top: 1.4em;
+  font-size: 1.2em;
+}
+
+h4::before {
+  background-color: var(--main-4);
+  content: '';
+  width: 6px;
+  display: inline-block;
+  height: 2px;
+  vertical-align: middle;
+  margin-bottom: 0.18em;
+  margin-right: 8px;
+}
+
+h5 {
+  font-size: 1em;
+}
+
+h6 {
+  font-size: 1em;
+  color: var(--mid-8);
+}
+
+/* Links */
+a {
+  color: var(--mid-10);
+  font-weight: 500;
+  padding: 0 2px;
+  text-decoration: none;
+  border-bottom: 1px solid var(--main-3);
+  transition: border-bottom 0.2s;
+}
+
+a:hover {
+  border-bottom: 2px solid var(--main-4);
+  color: var(--mid-10);
+}
+
+/* Lists */
+ul, ol {
+  padding-left: 30px;
+  margin: 0.8em 0;
+  line-height: 2rem;
+}
+
+li {
+  margin: 0.5rem 0;
+}
+
+li > ul, li > ol {
+  margin: 0;
+}
+
+/* Blockquote */
+blockquote {
+  position: relative;
+  border: none;
+  border-left: 2px solid var(--main-6);
+  color: var(--mid-8);
+  font-size: 1em;
+  font-style: normal;
+  padding: 24px 16px 12px;
+  margin: 24px 0 36px;
+  line-height: 1.6;
+  text-indent: 0;
+}
+
+blockquote::before {
+  content: '"';
+  position: absolute;
+  left: 12px;
+  top: 0;
+  color: var(--main-6);
+  font-size: 2em;
+  font-family: Arial, serif;
+  line-height: 1em;
+  font-weight: 700;
+}
+
+blockquote a {
+  color: var(--mid-9);
+}
+
+/* Horizontal Rule */
+hr {
+  width: 100%;
+  height: 1px;
+  padding: 0;
+  margin: 46px auto 64px;
+  background-color: var(--mid-6);
+  border: 0;
+  overflow: hidden;
+  box-sizing: content-box;
+}
+
+/* Tables */
+table {
+  margin: 36px auto;
+  padding: 0;
+  word-break: initial;
+  border-collapse: collapse;
+}
+
+table tr {
+  border-top: 1px solid var(--mid-7);
+  margin: 0;
+  padding: 0;
+}
+
+table tr:nth-child(2n),
+thead {
+  background-color: #202336;
+}
+
+table tr th {
+  font-weight: bold;
+  border: 1px solid var(--mid-7);
+  border-bottom: 0;
+  text-align: center;
+  margin: 0;
+  padding: 6px 13px;
+  background-color: #202336;
+}
+
+table tr td {
+  border: 1px solid var(--mid-7);
+  text-align: left;
+  margin: 0;
+  padding: 6px 13px;
+}
+
+/* Code */
+code, tt {
+  margin: 0 2px;
+  padding: 2px 4px 1px;
+  border-radius: 3px;
+  font-family: var(--font-code);
+  font-size: 0.92rem;
+  color: var(--main-6);
+  background-color: #ffb5b333;
+}
+
+pre {
+  margin: 1.8rem 0 2rem;
+  padding: 0.8rem 1rem 1rem;
+  font-family: var(--font-code);
+  font-size: 0.9rem;
+  line-height: 1.55rem;
+  color: var(--mid-9);
+  background-color: #1f2335;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+pre code {
+  padding: 0;
+  margin: 0;
+  background-color: transparent;
+  color: inherit;
+}
+
+/* Strong and Emphasis */
+strong {
+  padding: 0 1px;
+  font-weight: bold;
+  color: #f8f8f8;
+}
+
+em {
+  padding: 0 5px 0 2px;
+  font-style: italic;
+}
+
+/* Mark */
+mark {
+  background-color: var(--main-6);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 0 2px;
+  color: var(--mid-11);
+  font-weight: 500;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  margin: 24px auto;
+  border-radius: 4px;
+  display: block;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  body {
+    padding: 20px 15px;
+  }
+  
+  h1 {
+    font-size: 1.75em;
+  }
+  
+  h2 {
+    font-size: 1.5em;
+  }
+  
+  h3 {
+    font-size: 1.25em;
+  }
+}
+
+@media print {
+  html {
+    font-size: 13px;
+  }
+  
+  body {
+    max-width: 100%;
+    background-color: white;
+    color: black;
+  }
+  
+  table, pre {
+    page-break-inside: avoid;
+  }
+  
+  pre {
+    word-wrap: break-word;
+  }
+}
+

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="./in/vue.css">
+</head>
+<body>
+  <div id="app">加载中···<br/><i>* 如果长时间卡在此界面，请允许网站运行JavaScript脚本</i></div>
+  <script>
+    window.$docsify = {
+        loadSidebar: true,
+        autoHeader: true,
+        auto2top: true,
+        homepage: 'in/index.md',
+        name: '辩行记',
+        loadSidebar: 'in/sidebar.md',
+        notFoundPage: 'in/404.md',
+        search: {
+            maxAge: 86400000,
+            paths: 'auto', // or 'auto'
+            placeholder: '在此处搜索',
+            noData: '没有结果！',
+            depth: 6,
+            hideOtherSidebarContent: false,
+            namespace: 'website-1'
+        },
+        count:{
+            countable:true,
+            fontsize:'0.9em',
+            color:'rgb(90,90,90)',
+            language:'chinese'
+        },
+
+    }
+  </script>
+  <script src="./in/docsify.min.js"></script>
+  <script src="./in/search.min.js"></script>
+  <script src="./in/countable.js"></script>
+</body>
+</html>

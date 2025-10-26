@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Survival in BlackPot</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="./res/vue.css" />
+  <link rel="shortcut icon" href="./res/icon.png">
+</head>
+<body>
+  <div id="app">加载中...如果长时间卡在此界面，请允许浏览器使用JavaScript.</div>
+  <script>
+    window.$docsify = {
+        loadNavbar: true,
+        auto2top: true,
+        homepage: 'index.md',
+        hideSidebar: true,
+        autoHeader: true,
+        notFoundPage: {
+        '/': '_404.md',
+        '/zh-tw': 'zh-tw/_404.md',
+        '/en': 'en/_404.md',
+        '/ru': 'ru/_404.md',
+      },
+        cornerExternalLinkTarget: '_self',
+        fallbackLanguages: ['zh-tw', 'en', 'ru'],
+        loadNavbar: true,
+        coverpage: true,
+        onlyCover: true,
+    }
+  </script>
+  <script src="./res/docsify@4.js"></script>
+</body>
+</html>

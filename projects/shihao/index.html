@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>你的諡號 - 古風諡號生成器</title>
+    
+    <!-- Google Fonts for Traditional Chinese (China Mirror) -->
+    <link rel="preconnect" href="https://fonts.font.im">
+    <link href="https://fonts.font.im/css?family=Noto+Serif+TC:200,300,400,500,600,700,900|Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    
+    <!-- CSS CDN -->
+    <link href="./animate.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #8B4513;
+            --secondary-color: #D2691E;
+            --gold-color: #DAA520;
+            --paper-color: #F5F5DC;
+            --ink-color: #2F4F4F;
+            --shadow-color: rgba(139, 69, 19, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background: linear-gradient(135deg, var(--paper-color) 0%, #FDF5E6 100%);
+            color: var(--ink-color);
+            line-height: 1.8;
+            min-height: 100vh;
+            background-attachment: fixed;
+        }
+
+        .header-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.2) 0%, transparent 50%);
+        }
+
+        .header-content {
+            text-align: center;
+            z-index: 1;
+        }
+
+        .main-title {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 3rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: rgba(255,255,255,0.9);
+            font-weight: 300;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 1rem 2rem;
+            border: 2px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px var(--shadow-color);
+        }
+
+        .mode-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+
+        .mode-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .mode-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px var(--shadow-color);
+            margin-bottom: 2rem;
+            border: 1px solid var(--gold-color);
+        }
+
+        .filter-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #F9F9F9;
+            border-radius: 8px;
+            border: 1px solid #E0E0E0;
+        }
+
+        .filter-title {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .filter-mode {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-mode-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--secondary-color);
+            background: white;
+            color: var(--secondary-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .filter-mode-btn:hover, .filter-mode-btn.active {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .filter-options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-option {
+            padding: 0.5rem 1rem;
+            border: 2px solid #CCC;
+            background: white;
+            color: #666;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .filter-option:hover {
+            border-color: var(--gold-color);
+        }
+
+        .filter-option.selected {
+            border-color: var(--gold-color);
+            background: var(--gold-color);
+            color: white;
+        }
+
+        .random-mode {
+            text-align: center;
+        }
+
+        .generate-btn {
+            padding: 1.5rem 3rem;
+            background: linear-gradient(45deg, var(--gold-color), #FFD700);
+            color: var(--ink-color);
+            border: none;
+            border-radius: 8px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(218, 165, 32, 0.4);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(218, 165, 32, 0.6);
+        }
+
+        .custom-mode {
+            display: none;
+        }
+
+        .step {
+            margin-bottom: 2rem;
+        }
+
+        .step-title {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .length-selector {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .length-btn {
+            padding: 0.8rem 1.5rem;
+            border: 2px solid var(--secondary-color);
+            background: white;
+            color: var(--secondary-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .length-btn:hover, .length-btn.active {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .personality-section {
+            display: none;
+        }
+
+        .personality-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .personality-item {
+            padding: 1rem;
+            border: 2px solid #DDD;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            background: white;
+            line-height: 1.6;
+        }
+
+        .personality-item:hover {
+            border-color: var(--gold-color);
+            background: #FFFEF0;
+        }
+
+        .personality-item.selected {
+            border-color: var(--gold-color);
+            background: var(--gold-color);
+            color: white;
+        }
+
+        .selected-traits {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #F8F8F8;
+            border-radius: 6px;
+            min-height: 60px;
+        }
+
+        .trait-tag {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 20px;
+            margin: 0.2rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .trait-tag:hover {
+            background: var(--secondary-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .refresh-btn {
+            padding: 0.8rem 1.5rem;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: var(--primary-color);
+        }
+
+        .result-section {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #FFF8DC, #FFFEF0);
+            border-radius: 12px;
+            border: 2px solid var(--gold-color);
+            margin-top: 2rem;
+        }
+
+        .result-title {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .result-meaning {
+            background: white;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border-left: 4px solid var(--gold-color);
+            overflow: hidden;
+        }
+
+        .meaning-header {
+            padding: 1rem 1.5rem;
+            background: #F8F8F8;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .meaning-header:hover {
+            background: #F0F0F0;
+        }
+
+        .meaning-content {
+            padding: 0 1.5rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .meaning-content.expanded {
+            padding: 1.5rem;
+            max-height: 1000px;
+        }
+
+        .expand-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .expand-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        .meaning-item {
+            margin-bottom: 0.8rem;
+            padding: 0.5rem;
+            border-bottom: 1px solid #EEE;
+        }
+
+        .character {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-right: 0.5rem;
+        }
+
+        .reset-btn {
+            padding: 1rem 2rem;
+            background: #6B6B6B;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: #555;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .main-title {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .mode-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .mode-btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .generate-btn {
+                padding: 1.2rem 2rem;
+                font-size: 1.1rem;
+            }
+
+            .personality-grid {
+                gap: 0.6rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .refresh-btn, .length-btn {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header-image">
+        <div class="header-content">
+            <h1 class="main-title">你的諡號</h1>
+            <p class="subtitle">古風諡號生成器 · 體驗帝王風範</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="random">完全隨機</button>
+            <button class="mode-btn" data-mode="custom">自定義選擇</button>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-title">字符篩選設定</div>
+            <div class="filter-mode">
+                <button class="filter-mode-btn active" data-mode="include">只要模式</button>
+                <button class="filter-mode-btn" data-mode="exclude">排除模式</button>
+            </div>
+            <div class="filter-options">
+                <button class="filter-option selected" data-type="all">全部</button>
+                <button class="filter-option" data-type="good">好字</button>
+                <button class="filter-option" data-type="medium">中等字</button>
+                <button class="filter-option" data-type="bad">壞字</button>
+            </div>
+        </div>
+
+        <div class="mode-content">
+            <div id="random-mode" class="random-mode">
+                <h2 class="step-title">點擊下方按鈕，隨機生成你的帝王諡號</h2>
+                <button class="generate-btn" onclick="generateRandomTitle()">生成諡號</button>
+            </div>
+
+            <div id="custom-mode" class="custom-mode">
+                <div class="step">
+                    <h3 class="step-title">第一步：選擇諡號字數</h3>
+                    <div class="length-selector">
+                        <button class="length-btn" data-length="17">17字</button>
+                        <button class="length-btn" data-length="21">21字</button>
+                        <button class="length-btn" data-length="23">23字</button>
+                        <button class="length-btn" data-length="25">25字</button>
+                    </div>
+                </div>
+
+                <div class="step personality-section">
+                    <h3 class="step-title">第二步：你覺得你是個什麼樣的人？</h3>
+                    <div class="selected-traits">
+                        <strong>已選擇的特質：</strong>
+                        <div id="selected-list"></div>
+                    </div>
+                    <div class="personality-grid" id="personality-grid"></div>
+                    <div class="action-buttons">
+                        <button class="refresh-btn" onclick="refreshPersonalities()">我不是這樣的人</button>
+                        <button class="generate-btn" id="custom-generate-btn" onclick="generateCustomTitle()" style="display: none;">生成我的諡號</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result-section" class="result-section">
+            <h2 style="margin-bottom: 1rem; color: var(--primary-color);">陛下，您的諡號是：</h2>
+            <div id="result-title" class="result-title"></div>
+            <div id="result-meaning" class="result-meaning">
+                <div class="meaning-header" onclick="toggleMeaning()">
+                    <h3 style="margin: 0; color: var(--primary-color);">諡號含義</h3>
+                    <span class="expand-icon">▼</span>
+                </div>
+                <div class="meaning-content" id="meaning-content"></div>
+            </div>
+            <button class="reset-btn" onclick="resetApp()">重新開始</button>
+        </div>
+    </div>
+
+    <script>
+        // 載入JSON資料
+        let shihaoData = {};
+        let classData = {};
+        let selectedMode = 'random';
+        let selectedLength = 0;
+        let selectedTraits = [];
+        let currentPersonalities = [];
+        let filterMode = 'include'; // 'include' 或 'exclude'
+        let selectedFilters = ['all']; // 'all', 'good', 'medium', 'bad'
+
+        // 載入資料
+        async function loadData() {
+            try {
+                const [shihaoResponse, classResponse] = await Promise.all([
+                    fetch('shihao.json'),
+                    fetch('class.json')
+                ]);
+                
+                shihaoData = await shihaoResponse.json();
+                classData = await classResponse.json();
+                
+                console.log('資料載入完成');
+            } catch (error) {
+                console.error('載入資料失敗:', error);
+                alert('載入資料失敗，請檢查網路連接');
+            }
+        }
+
+        // 字符過濾功能
+        function getFilteredCharacters() {
+            let availableChars = [];
+            
+            if (filterMode === 'include') {
+                // 只要模式
+                if (selectedFilters.includes('all')) {
+                    availableChars = Object.keys(shihaoData);
+                } else {
+                    if (selectedFilters.includes('good')) {
+                        availableChars = availableChars.concat(classData['上'] || []);
+                    }
+                    if (selectedFilters.includes('medium')) {
+                        availableChars = availableChars.concat(classData['中'] || []);
+                    }
+                    if (selectedFilters.includes('bad')) {
+                        availableChars = availableChars.concat(classData['下'] || []);
+                    }
+                    
+                    // 去重並過濾只保留在shihaoData中存在的字符
+                    availableChars = [...new Set(availableChars)].filter(char => char in shihaoData);
+                }
+            } else {
+                // 排除模式：從所有字符中排除選中的類別
+                const allChars = Object.keys(shihaoData);
+                
+                if (selectedFilters.includes('all')) {
+                    // 如果選擇排除全部，返回空數組
+                    availableChars = [];
+                } else {
+                    const excludeChars = [];
+                    
+                    if (selectedFilters.includes('good')) {
+                        excludeChars.push(...(classData['上'] || []));
+                    }
+                    if (selectedFilters.includes('medium')) {
+                        excludeChars.push(...(classData['中'] || []));
+                    }
+                    if (selectedFilters.includes('bad')) {
+                        excludeChars.push(...(classData['下'] || []));
+                    }
+                    
+                    const excludeSet = new Set(excludeChars);
+                    availableChars = allChars.filter(char => !excludeSet.has(char));
+                }
+            }
+            
+            return availableChars;
+        }
+
+        // 切換含義顯示
+        function toggleMeaning() {
+            const content = document.getElementById('meaning-content');
+            const icon = document.querySelector('.expand-icon');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                icon.classList.remove('rotated');
+            } else {
+                content.classList.add('expanded');
+                icon.classList.add('rotated');
+            }
+        }
+
+        // 模式切換
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                selectedMode = btn.dataset.mode;
+                
+                if (selectedMode === 'random') {
+                    document.getElementById('random-mode').style.display = 'block';
+                    document.getElementById('custom-mode').style.display = 'none';
+                } else {
+                    document.getElementById('random-mode').style.display = 'none';
+                    document.getElementById('custom-mode').style.display = 'block';
+                }
+                
+                resetApp();
+            });
+        });
+
+        // 字數選擇
+        document.querySelectorAll('.length-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.length-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                selectedLength = parseInt(btn.dataset.length);
+                selectedTraits = [];
+                updateSelectedTraits();
+                
+                document.querySelector('.personality-section').style.display = 'block';
+                document.querySelector('.personality-section').classList.add('fade-in');
+                
+                refreshPersonalities();
+            });
+        });
+
+        // 隨機生成諡號
+        function generateRandomTitle() {
+            const lengths = [17, 21, 23, 25];
+            const randomLength = lengths[Math.floor(Math.random() * lengths.length)];
+            
+            // 獲取過濾後的字符
+            const availableChars = getFilteredCharacters();
+            if (availableChars.length === 0) {
+                alert('當前過濾條件下沒有可用字符，請調整過濾設置');
+                return;
+            }
+            
+            const numTraits = randomLength - 1; // 最後一個字從class.json選擇
+            const selectedRandomTraits = [];
+            
+            // 隨機選擇特質
+            const shuffledTraits = [...availableChars].sort(() => 0.5 - Math.random());
+            for (let i = 0; i < numTraits && i < shuffledTraits.length; i++) {
+                selectedRandomTraits.push(shuffledTraits[i]);
+            }
+            
+            // 從好字中選擇最後一個字
+            const goodChars = classData['上'];
+            const lastChar = goodChars[Math.floor(Math.random() * goodChars.length)];
+            
+            const finalTitle = selectedRandomTraits.join('') + lastChar + '皇帝';
+            
+            displayResult(finalTitle, [...selectedRandomTraits, lastChar]);
+        }
+
+        // 生成個性選項
+        function refreshPersonalities() {
+            if (!shihaoData || Object.keys(shihaoData).length === 0) {
+                console.error('shihaoData not loaded');
+                return;
+            }
+            
+            // 獲取過濾後的字符
+            const availableChars = getFilteredCharacters();
+            const availableTraits = availableChars.filter(trait => !selectedTraits.includes(trait));
+            
+            if (availableTraits.length === 0) {
+                // 如果沒有可用特質，顯示提示
+                const grid = document.getElementById('personality-grid');
+                grid.innerHTML = '<div style="text-align: center; color: #666; padding: 2rem;">當前過濾條件下沒有可用選項，請調整過濾設置</div>';
+                return;
+            }
+            
+            currentPersonalities = [];
+            for (let i = 0; i < 10 && availableTraits.length > 0; i++) {
+                const randomIndex = Math.floor(Math.random() * availableTraits.length);
+                const trait = availableTraits.splice(randomIndex, 1)[0];
+                currentPersonalities.push(trait);
+            }
+            
+            renderPersonalities();
+            updateGenerateButton();
+        }
+
+        // 渲染個性選項
+        function renderPersonalities() {
+            const grid = document.getElementById('personality-grid');
+            grid.innerHTML = '';
+            
+            currentPersonalities.forEach(trait => {
+                const item = document.createElement('div');
+                item.className = 'personality-item';
+                item.onclick = () => selectPersonality(trait);
+                
+                const meaning = shihaoData[trait];
+                const meaningText = Array.isArray(meaning) ? meaning[0] : meaning;
+                
+                // 只顯示含義，不顯示字符
+                item.innerHTML = `
+                    <div style="font-size: 1rem; color: #333; line-height: 1.6;">${meaningText}</div>
+                `;
+                
+                // 將字符作為data屬性存儲
+                item.dataset.trait = trait;
+                
+                grid.appendChild(item);
+            });
+        }
+
+        // 選擇個性特質
+        function selectPersonality(trait) {
+            if (!selectedTraits.includes(trait)) {
+                selectedTraits.push(trait);
+                updateSelectedTraits();
+                refreshPersonalities();
+            }
+        }
+
+        // 更新已選特質顯示
+        function updateSelectedTraits() {
+            const list = document.getElementById('selected-list');
+            list.innerHTML = '';
+            
+            selectedTraits.forEach(trait => {
+                const tag = document.createElement('span');
+                tag.className = 'trait-tag';
+                
+                // 顯示含義而不是字符
+                const meaning = shihaoData[trait];
+                const meaningText = Array.isArray(meaning) ? meaning[0] : meaning;
+                const shortMeaning = meaningText.length > 6 ? meaningText.substring(0, 6) + '...' : meaningText;
+                
+                tag.textContent = shortMeaning;
+                tag.title = meaningText; // 鼠標懸停顯示完整含義
+                tag.onclick = () => removeSelectedTrait(trait);
+                tag.dataset.trait = trait; // 存儲實際字符用於移除
+                
+                list.appendChild(tag);
+            });
+            
+            updateGenerateButton();
+        }
+
+        // 移除已選特質
+        function removeSelectedTrait(trait) {
+            selectedTraits = selectedTraits.filter(t => t !== trait);
+            updateSelectedTraits();
+            refreshPersonalities();
+        }
+
+        // 更新生成按鈕狀態
+        function updateGenerateButton() {
+            const btn = document.getElementById('custom-generate-btn');
+            const neededTraits = selectedLength - 1; // 最後一個字從class.json選
+            
+            if (selectedTraits.length >= neededTraits) {
+                btn.style.display = 'block';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        // 生成自定義諡號
+        function generateCustomTitle() {
+            const neededTraits = selectedLength - 1;
+            let finalTraits = [...selectedTraits];
+            
+            // 如果選擇的特質不夠，從剩餘的特質中隨機選擇
+            if (finalTraits.length < neededTraits) {
+                const allTraits = Object.keys(shihaoData);
+                const availableTraits = allTraits.filter(trait => !finalTraits.includes(trait));
+                
+                while (finalTraits.length < neededTraits && availableTraits.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * availableTraits.length);
+                    const trait = availableTraits.splice(randomIndex, 1)[0];
+                    finalTraits.push(trait);
+                }
+            } else if (finalTraits.length > neededTraits) {
+                // 如果選擇的特質太多，隨機選擇需要的數量
+                finalTraits = finalTraits.sort(() => 0.5 - Math.random()).slice(0, neededTraits);
+            }
+            
+            // 從好字中選擇最後一個字
+            const goodChars = classData['上'];
+            const lastChar = goodChars[Math.floor(Math.random() * goodChars.length)];
+            
+            const finalTitle = finalTraits.join('') + lastChar + '皇帝';
+            
+            displayResult(finalTitle, [...finalTraits, lastChar]);
+        }
+
+        // 顯示結果
+        function displayResult(title, characters) {
+            document.getElementById('result-title').textContent = title;
+            
+            const meaningContent = document.getElementById('meaning-content');
+            meaningContent.innerHTML = '';
+            
+            characters.forEach(char => {
+                if (char in shihaoData) {
+                    const meaning = shihaoData[char];
+                    const meaningText = Array.isArray(meaning) ? meaning.join('；') : meaning;
+                    
+                    const item = document.createElement('div');
+                    item.className = 'meaning-item';
+                    item.innerHTML = `<span class="character">${char}</span>：${meaningText}`;
+                    meaningContent.appendChild(item);
+                }
+            });
+            
+            // 重置含義顯示狀態為折叠
+            meaningContent.classList.remove('expanded');
+            document.querySelector('.expand-icon').classList.remove('rotated');
+            
+            document.getElementById('result-section').style.display = 'block';
+            document.getElementById('result-section').classList.add('fade-in');
+            
+            // 滾動到結果區域
+            document.getElementById('result-section').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
+        // 重置應用
+        function resetApp() {
+            selectedTraits = [];
+            selectedLength = 0;
+            currentPersonalities = [];
+            
+            document.getElementById('result-section').style.display = 'none';
+            document.querySelector('.personality-section').style.display = 'none';
+            document.querySelectorAll('.length-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('selected-list').innerHTML = '';
+            document.getElementById('personality-grid').innerHTML = '';
+            document.getElementById('custom-generate-btn').style.display = 'none';
+        }
+
+        // 過濾器事件監聽
+        document.querySelectorAll('.filter-mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                filterMode = btn.dataset.mode;
+                
+                // 重新渲染個性選項如果在自定義模式
+                if (selectedMode === 'custom' && selectedLength > 0) {
+                    refreshPersonalities();
+                }
+            });
+        });
+
+        document.querySelectorAll('.filter-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.type;
+                
+                if (type === 'all') {
+                    // 如果點擊全部，清除其他選項
+                    document.querySelectorAll('.filter-option').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedFilters = ['all'];
+                } else {
+                    // 如果點擊其他選項，移除全部選項
+                    document.querySelector('.filter-option[data-type="all"]').classList.remove('selected');
+                    
+                    if (btn.classList.contains('selected')) {
+                        btn.classList.remove('selected');
+                        selectedFilters = selectedFilters.filter(f => f !== type);
+                        
+                        // 如果沒有選擇任何選項，默認選擇全部
+                        if (selectedFilters.length === 0) {
+                            document.querySelector('.filter-option[data-type="all"]').classList.add('selected');
+                            selectedFilters = ['all'];
+                        }
+                    } else {
+                        btn.classList.add('selected');
+                        selectedFilters.push(type);
+                    }
+                }
+                
+                // 重新渲染個性選項如果在自定義模式
+                if (selectedMode === 'custom' && selectedLength > 0) {
+                    refreshPersonalities();
+                }
+            });
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+        });
+    </script>
+</body>
+</html>

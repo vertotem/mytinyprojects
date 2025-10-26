@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词表导入（MD表格） → 模板渲染</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.08);
+            border-radius: 8px;
+        }
+        h1 {
+            margin-top: 0;
+            text-align: center;
+        }
+        textarea {
+            width: 100%;
+            height: 260px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 14px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            resize: vertical;
+            background: #fafafa;
+        }
+        .actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 18px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #1677ff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+        }
+        button.secondary { background: #666; }
+        .help {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #666;
+        }
+        .sample {
+            margin-top: 12px;
+            font-size: 13px;
+            background: #f7fbff;
+            border: 1px dashed #bfe0ff;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .error { color: #c00; margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>粘贴 MD 表格（两列：中文｜英文）</h1>
+        <textarea id="mdInput" placeholder="可以粘贴整段内容，只要包含一个 MD 表格，且表头包含：中文、英文（顺序不限）"></textarea>
+        <div class="actions">
+            <button id="previewBtn">预览/打印模板</button>
+            <button class="secondary" id="fillSampleBtn" type="button">填入示例表格</button>
+        </div>
+        <div class="help">
+            说明：
+            <ul>
+                <li>程序会自动从你粘贴的内容中寻找第一个包含表头“中文/英文”的 MD 表格。</li>
+                <li>解析出后将嵌入到 <code>muban.html</code> 中：第1列显示英文，第3列显示中文；第2、4列为空，便于练习。</li>
+            </ul>
+        </div>
+        <pre class="sample" id="sampleBlock">| 中文 | 英文 |
+| --- | --- |
+| 遥远的 | faraway |
+| 平常的；有规律的 | regular |
+| 乡村；农村 | countryside |
+| 转身；翻转 | turn around |
+| 惊讶的 | surprised |
+| 鹿 | deer |
+| 很可能；大概 | probably |
+| 寻找 | look for |</pre>
+        <div class="error" id="errorBox" style="display:none"></div>
+    </div>
+
+<script>
+(function() {
+    const mdInput = document.getElementById('mdInput');
+    const previewBtn = document.getElementById('previewBtn');
+    const fillSampleBtn = document.getElementById('fillSampleBtn');
+    const errorBox = document.getElementById('errorBox');
+    const sampleBlock = document.getElementById('sampleBlock');
+
+    fillSampleBtn.addEventListener('click', () => {
+        mdInput.value = sampleBlock.textContent.trim();
+        errorBox.style.display = 'none';
+    });
+
+    previewBtn.addEventListener('click', () => {
+        errorBox.style.display = 'none';
+        try {
+            const rows = extractFirstChineseEnglishTable(mdInput.value || '');
+            if (!rows.length) {
+                throw new Error('未找到包含“中文/英文”表头的 MD 表格。');
+            }
+            const payload = { words: rows };
+            const encoded = encodeForUrl(payload);
+            const url = 'muban.html?data=' + encoded;
+            window.location.href = url;
+        } catch (e) {
+            errorBox.textContent = e.message || String(e);
+            errorBox.style.display = 'block';
+        }
+    });
+
+    function encodeForUrl(obj) {
+        const json = JSON.stringify(obj);
+        const utf8 = new TextEncoder().encode(json);
+        let binary = '';
+        utf8.forEach(b => { binary += String.fromCharCode(b); });
+        return encodeURIComponent(btoa(binary));
+    }
+
+    function extractFirstChineseEnglishTable(text) {
+        const lines = text.split(/\r?\n/);
+        const tables = [];
+        let i = 0;
+        while (i < lines.length) {
+            if (isTableRow(lines[i])) {
+                const start = i;
+                while (i < lines.length && isTableRow(lines[i])) i++;
+                const end = i; // non-inclusive
+                const block = lines.slice(start, end);
+                tables.push(block);
+            } else {
+                i++;
+            }
+        }
+        for (const block of tables) {
+            const parsed = parseMarkdownTable(block);
+            if (parsed && parsed.rows.length && parsed.headers) {
+                const headers = parsed.headers.map(h => h.trim());
+                const idxCn = headers.findIndex(h => h === '中文');
+                const idxEn = headers.findIndex(h => h === '英文');
+                if (idxCn !== -1 && idxEn !== -1) {
+                    return parsed.rows.map(cells => ({
+                        chinese: (cells[idxCn] || '').trim(),
+                        english: (cells[idxEn] || '').trim()
+                    })).filter(r => r.chinese || r.english);
+                }
+            }
+        }
+        return [];
+    }
+
+    function isTableRow(line) {
+        return /\|/.test(line);
+    }
+
+    function splitTableRow(line) {
+        const trimmed = line.trim();
+        const core = trimmed.replace(/^\|/, '').replace(/\|$/, '');
+        return core.split('|').map(s => s.trim());
+    }
+
+    function parseMarkdownTable(blockLines) {
+        if (blockLines.length < 2) return null;
+        const header = splitTableRow(blockLines[0]);
+        const align = splitTableRow(blockLines[1]);
+        const isDivider = align.every(cell => /^:?-{3,}:?$/.test(cell));
+        if (!isDivider) return null;
+        const dataRows = [];
+        for (let k = 2; k < blockLines.length; k++) {
+            const line = blockLines[k];
+            if (!isTableRow(line)) break;
+            const cells = splitTableRow(line);
+            // 对齐列数量
+            const cols = Math.max(header.length, cells.length);
+            while (cells.length < cols) cells.push('');
+            dataRows.push(cells);
+        }
+        return { headers: header, rows: dataRows };
+    }
+})();
+</script>
+</body>
+</html> 

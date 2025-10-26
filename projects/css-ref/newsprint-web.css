@@ -1,0 +1,234 @@
+/* Newsprint Web Theme
+ * Converted from Typora Newsprint theme for general web use
+ * Classic newspaper-style layout
+ */
+
+/* Font Imports */
+@import url(https://fonts.googleapis.com/css?family=PT+Serif:400,400italic,700,700italic&subset=latin,cyrillic-ext,cyrillic,latin-ext);
+
+:root {
+  --bg-color: #f3f2ee;
+  --text-color: #1f0909;
+  --link-color: #065588;
+  --border-color: #c5c5c5;
+  --blockquote-color: #656565;
+  --code-bg-color: #dadada;
+  --font-serif: "PT Serif", 'Times New Roman', Times, serif;
+  
+  /* Docute变量覆盖 */
+  --page-background: #f3f2ee;
+  --main-background: #f3f2ee;
+  --header-background: #f3f2ee;
+  --sidebar-background: #f3f2ee;
+}
+
+/* 统一容器宽度与默认主题一致 */
+.Wrap {
+  max-width: 1180px !important;
+}
+
+.Content,
+.layout-wide .Content,
+.Content[data-v-2f23fdf8],
+.layout-wide .Content[data-v-2f23fdf8] {
+  max-width: 770px !important;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body {
+  background-color: var(--bg-color);
+  font-family: var(--font-serif);
+  color: var(--text-color);
+  line-height: 1.5em;
+}
+
+body {
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold;
+  margin-bottom: 1.5em;
+}
+
+h1 {
+  font-size: 1.875em;
+  line-height: 1.6em;
+  margin-top: 2em;
+  border-bottom: 1px solid;
+  margin-bottom: 1.875em;
+  padding-bottom: 0.8125em;
+}
+
+h2, h3 {
+  font-size: 1.3125em;
+  line-height: 1.15;
+  margin-top: 2.285714em;
+  margin-bottom: 1.15em;
+}
+
+h3 {
+  font-weight: normal;
+}
+
+h4 {
+  font-size: 1.125em;
+  margin-top: 2.67em;
+}
+
+h5, h6 {
+  font-size: 1em;
+}
+
+p {
+  margin-bottom: 1.5em;
+}
+
+/* Links */
+a {
+  text-decoration: none;
+  color: var(--link-color);
+}
+
+a:hover, a:active {
+  text-decoration: underline;
+}
+
+/* Lists */
+ul, ol {
+  margin: 0 0 1.5em 1.5em;
+}
+
+li {
+  margin: 0.5em 0;
+}
+
+li ol > li {
+  list-style-type: lower-alpha;
+}
+
+li li ol > li {
+  list-style-type: lower-roman;
+}
+
+/* Blockquote */
+blockquote {
+  font-style: italic;
+  border-left: 5px solid;
+  border-color: #bababa;
+  color: var(--blockquote-color);
+  margin-left: 2em;
+  padding-left: 1em;
+  margin: 1.5em 0;
+}
+
+blockquote ul, blockquote ol {
+  margin-left: 0;
+}
+
+/* Tables */
+table {
+  margin-bottom: 1.5em;
+  font-size: 1em;
+  border-collapse: collapse;
+}
+
+thead th, tfoot th {
+  padding: .25em .25em .25em .4em;
+  text-transform: uppercase;
+}
+
+th {
+  text-align: left;
+}
+
+td {
+  vertical-align: top;
+  padding: .25em .25em .25em .4em;
+}
+
+thead {
+  background-color: var(--code-bg-color);
+}
+
+tr:nth-child(even) {
+  background: #e8e7e7;
+}
+
+/* Horizontal Rule */
+hr {
+  border-top: none;
+  border-right: none;
+  border-bottom: 1px solid;
+  border-left: none;
+  border-color: var(--border-color);
+  margin: 2em 0;
+}
+
+h1 {
+  border-color: var(--border-color);
+}
+
+/* Code */
+code {
+  background-color: var(--code-bg-color);
+  padding-left: 2px;
+  padding-right: 2px;
+  font-size: .875em;
+  font-family: Menlo, 'Ubuntu Mono', Consolas, 'Courier New', monospace;
+  border-radius: 2px;
+}
+
+pre {
+  background-color: var(--code-bg-color);
+  margin-left: 2em;
+  margin-bottom: 3em;
+  padding-left: 1ch;
+  padding-right: 1ch;
+  padding: 0.5em;
+  font-size: .875em;
+  line-height: 1.714285em;
+  overflow-x: auto;
+  font-family: Menlo, 'Ubuntu Mono', Consolas, 'Courier New', monospace;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em 0;
+}
+
+/* Responsive Design */
+@media only screen and (min-width: 1400px) {
+  body {
+    max-width: 914px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 1rem;
+  }
+  
+  h1 {
+    font-size: 1.5em;
+  }
+  
+  h2, h3 {
+    font-size: 1.2em;
+  }
+}
+

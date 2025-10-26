@@ -1,0 +1,212 @@
+/* Notion Darker Classic Web Theme
+ * Converted from Typora Notion Darker theme for general web use
+ * Ultra dark theme for OLED screens
+ */
+
+:root {
+  /* Text and Background */
+  --bg-color: #0a0a0a;
+  --text-color: #d4d4d4;
+  --secondary-text-color: #888;
+  --text-accent-color: #2a2a2a;
+  --bg-color-dark: #151515;
+  
+  /* Code colors */
+  --code-fence-text-color: #ff6b9d;
+  --code-fence-bg-color: #151515;
+  --code-color: #c9a26d;
+  
+  /* Blockquote */
+  --blockquote-bg-color: #0a0a0a;
+  --blockquote-accent-color: #d4d4d4;
+  --blockquote-text-color: #aaa;
+  
+  /* Other colors */
+  --light-trait-100: #e0e0e0;
+  --link-color: #58a6ff;
+  --border-color: #333;
+  
+  /* Docute变量覆盖（超暗色主题） */
+  --page-background: #0a0a0a;
+  --main-background: #0a0a0a;
+  --header-background: #0a0a0a;
+  --header-text-color: #d4d4d4;
+  --sidebar-background: #0a0a0a;
+  --sidebar-link-color: #d4d4d4;
+  --sidebar-link-active-color: #58a6ff;
+  --sidebar-link-arrow-color: #555;
+  --nav-link-color: #d4d4d4;
+  --nav-link-border-color: #58a6ff;
+  --accent-color: #58a6ff;
+  --inline-code-background: #151515;
+  --inline-code-color: #ff6b9d;
+  --code-block-background: #151515;
+  --code-block-text-color: #d4d4d4;
+  --code-block-shadow-width: 1px;
+  --code-block-shadow-color: #333;
+  --table-header-background: #151515;
+  --table-header-color: #d4d4d4;
+  --search-icon-color: #666;
+  --search-focus-icon-color: #58a6ff;
+  --search-focus-border-color: #58a6ff;
+  --search-result-background: #151515;
+  --search-result-hover-background: #222;
+  --highlighted-line-background: rgba(88, 166, 255, 0.1);
+  --highlighted-line-border-color: #58a6ff;
+  
+  /* Fonts */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+  --monospace: 'SF Mono Medium', 'Fira Code', 'Cousine', 'Consolas', monospace;
+}
+
+/* 统一容器宽度与默认主题一致 */
+.Wrap {
+  max-width: 1180px !important;
+}
+
+.layout-wide .Content {
+  max-width: 770px !important;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  line-height: 1.6;
+  margin: 0 auto;
+  padding: 30px;
+  padding-bottom: 100px;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  position: relative;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--light-trait-100);
+}
+
+h1 { padding-bottom: 0.3em; font-size: 2.2em; line-height: 1.3; }
+h2 { padding-bottom: 0.3em; font-size: 1.75em; line-height: 1.225; }
+h3 { font-size: 1.4em; line-height: 1.43; }
+h4 { font-size: 1.2em; }
+h5, h6 { font-size: 1em; }
+
+/* Paragraph */
+p, blockquote, ul, ol, dl, table { margin: 0.8em 0; }
+
+/* Links */
+a {
+  color: var(--link-color);
+  text-decoration: none;
+  border-bottom: 0.05em solid;
+  border-color: var(--link-color);
+  transition: all .1s ease-in;
+}
+a:hover { opacity: 0.8; }
+
+/* Lists */
+ul, ol { padding-left: 30px; }
+li > ol, li > ul { margin: 0; }
+
+/* Horizontal Rule */
+hr {
+  background-color: var(--border-color);
+  height: 1.5px;
+  border: none;
+  margin: 2em 0;
+}
+
+/* Blockquote */
+blockquote {
+  color: var(--blockquote-text-color);
+  margin-left: 1.75px;
+  margin-right: 0;
+  border-left: 4px solid var(--blockquote-accent-color);
+  padding: 10px 14px 7px 22px;
+  background-color: var(--blockquote-bg-color);
+}
+
+/* Tables */
+table {
+  padding: 0;
+  word-break: initial;
+  border-collapse: collapse;
+}
+table tr {
+  border-top: 1px solid var(--text-accent-color);
+  margin: 0;
+  padding: 0;
+}
+table tr th, table tr td {
+  border: 1px solid var(--text-accent-color);
+  margin: 0;
+  padding: 6px 13px;
+}
+table tr th { font-weight: bold; border-bottom: 0; }
+
+/* Code */
+code, tt {
+  border: none;
+  color: var(--code-fence-text-color);
+  background-color: var(--code-fence-bg-color);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 0.975em;
+  font-weight: medium;
+  font-family: var(--monospace);
+}
+
+pre {
+  margin-bottom: 15px;
+  margin-top: 15px;
+  padding: 8px 12px;
+  background-color: var(--code-fence-bg-color);
+  border-radius: 4px;
+  overflow-x: auto;
+  font-family: var(--monospace);
+  line-height: 1.5;
+}
+pre code {
+  padding: 0;
+  background-color: transparent;
+  color: inherit;
+}
+
+/* Strong and Emphasis */
+strong { font-weight: bold; }
+em { font-style: italic; }
+
+/* Mark */
+mark {
+  border-radius: 4px;
+  color: #000;
+  font-weight: inherit;
+  background-color: #ffd700;
+  padding: 2px 4px;
+  margin: 0 2px;
+}
+
+/* Images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  body { padding: 20px 15px; }
+  h1 { font-size: 1.8em; }
+  h2 { font-size: 1.5em; }
+  h3 { font-size: 1.25em; }
+}
+

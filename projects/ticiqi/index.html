@@ -1,0 +1,188 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown 提词器</title>
+  <script src="./marked.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+    }
+    #input-container {
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    #markdown-input {
+      width: 100%;
+      height: 300px;
+      padding: 15px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    .settings {
+      margin-top: 10px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    label {
+      font-size: 14px;
+    }
+    #font-size {
+      width: 60px;
+      padding: 5px;
+    }
+    #start-teleprompter {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #start-teleprompter:hover {
+      background-color: #0056b3;
+    }
+    #teleprompter {
+      display: none;
+      background-color: white;
+      overflow: auto;
+      scroll-behavior: smooth;
+      height: 100vh;
+    }
+    #content {
+      padding: 40px;
+      max-width: 1000px;
+      margin: 0 auto;
+      line-height: 1.6;
+      user-select: none; /* 禁止文本选择 */
+      -webkit-user-select: none; /* 兼容 Safari */
+      -moz-user-select: none; /* 兼容 Firefox */
+      -ms-user-select: none; /* 兼容 IE/Edge */
+    }
+  </style>
+</head>
+<body>
+  <div id="input-container">
+    <textarea id="markdown-input" placeholder="粘贴 Markdown 内容"></textarea>
+    <div class="settings">
+      <label>字体大小: <input type="number" id="font-size" value="18" min="10" max="50"></label>
+      <label>字体颜色: <input type="color" id="font-color" value="#000000"></label>
+    </div>
+    <button id="start-teleprompter">开始提词</button>
+    <div id="instructions">
+      <p>使用说明：</p>
+      <ul>
+        <li>粘贴 Markdown 内容到文本框。</li>
+        <li>设置字体大小和颜色。</li>
+        <li>点击“开始提词”进入全屏提词模式。</li>
+        <li>在提词模式下：</li>
+        <ul>
+          <li>点击鼠标、按下/右键或空格键向下滚动。</li>
+          <li>按上/左键向上滚动。</li>
+          <li>按 ESC 退出全屏。</li>
+        </ul>
+      </ul>
+    </div>
+  </div>
+  <div id="teleprompter" tabindex="0">
+    <div id="content"></div>
+  </div>
+  <script>
+    const markdownInput = document.getElementById('markdown-input');
+    const fontSizeInput = document.getElementById('font-size');
+    const fontColorInput = document.getElementById('font-color');
+    const startButton = document.getElementById('start-teleprompter');
+    const teleprompter = document.getElementById('teleprompter');
+    const contentDiv = document.getElementById('content');
+
+    startButton.addEventListener('click', () => {
+      const markdown = markdownInput.value;
+      const fontSize = fontSizeInput.value + 'px';
+      const fontColor = fontColorInput.value;
+      const html = marked.parse(markdown);
+      contentDiv.innerHTML = html;
+      contentDiv.style.fontSize = fontSize;
+      contentDiv.style.color = fontColor;
+      teleprompter.style.display = 'block';
+      document.getElementById('input-container').style.display = 'none';
+      teleprompter.requestFullscreen().then(() => {
+        teleprompter.focus(); // 确保进入全屏后聚焦
+      });
+    });
+
+    teleprompter.addEventListener('click', () => {
+      const scrollAmount = window.innerHeight * 0.8;
+      teleprompter.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (teleprompter.style.display === 'block') {
+        e.preventDefault(); // 阻止默认行为
+        const scrollAmount = window.innerHeight * 0.8;
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+          teleprompter.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          teleprompter.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+        }
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        teleprompter.style.display = 'none';
+        document.getElementById('input-container').style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

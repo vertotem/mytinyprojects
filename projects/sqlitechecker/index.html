@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>SQLite 数据和结构查看器 (本地文件)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h1, h2 { color: #333; }
+        #file-input-container, #table-selector-container { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9; }
+        #table-selector-container { display: none; } /* 初始隐藏 */
+        #table-select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; min-width: 200px; }
+        .error { color: red; font-weight: bold; }
+        #data-viewer { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; overflow-x: auto; max-height: 80vh; }
+        
+        /* 数据表格样式 */
+        #data-viewer table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 10px; 
+            min-width: 600px;
+        }
+        #data-viewer th, #data-viewer td { 
+            padding: 8px 12px; 
+            border: 1px solid #e0e0e0; 
+            text-align: left; 
+            font-size: 0.9em;
+            white-space: nowrap; /* 防止内容自动换行 */
+        }
+        #data-viewer th { 
+            background-color: #007bff; 
+            color: white; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10;
+        }
+    </style>
+    
+    <script src="./sql-wasm.js"></script>
+</head>
+<body>
+
+    <h1>SQLite 数据库查看器</h1>
+
+    <div id="file-input-container">
+        <label for="dbfile">第一步：选择 .db 或 .sqlite 文件：</label>
+        <input type="file" id="dbfile" accept=".db, .sqlite, .sqlite3">
+        <p class="error" id="error-message"></p>
+    </div>
+
+    <div id="table-selector-container">
+        <label for="table-select">第二步：选择要查看数据的表：</label>
+        <select id="table-select"></select>
+    </div>
+
+    <div id="output">
+        <h2>表数据和结构预览</h2>
+        <div id="data-viewer">请加载数据库，并确保您在本地 HTTP 服务器中运行页面。</div>
+    </div>
+
+    <script>
+        const dbFileElm = document.getElementById('dbfile');
+        const tableSelectorContainer = document.getElementById('table-selector-container');
+        const tableSelect = document.getElementById('table-select');
+        const dataViewer = document.getElementById('data-viewer');
+        const errorMessage = document.getElementById('error-message');
+
+        let SQL;
+        let currentDb = null;
+
+        // 1. 初始化 sql.js
+        async function initDatabase() {
+            try {
+                // 关键修改 2: 移除 locateFile 选项
+                // sql.js 默认会尝试在与 sql-wasm.js 相同的路径加载 sql-wasm.wasm
+                SQL = await initSqlJs({}); 
+                
+                console.log("sql.js 已加载并初始化 (本地文件)。");
+            } catch (err) {
+                errorMessage.textContent = '错误：无法加载或初始化 sql.js/WebAssembly。请确保您已启动本地 HTTP 服务器，并文件 (sql-wasm.js, sql-wasm.wasm) 放置正确。' + err.message;
+                console.error(err);
+            }
+        }
+
+        // 2. 文件选择处理器
+        dbFileElm.addEventListener('change', async (event) => {
+            errorMessage.textContent = '';
+            tableSelectorContainer.style.display = 'none';
+            dataViewer.innerHTML = '正在加载和解析数据库...';
+
+            if (!SQL) {
+                errorMessage.textContent = 'sql.js 尚未初始化完成，请稍候再试。';
+                return;
+            }
+
+            const file = event.target.files[0];
+            if (!file) {
+                dataViewer.innerHTML = '请选择一个文件以加载数据库...';
+                return;
+            }
+
+            try {
+                if (currentDb) {
+                    currentDb.close();
+                }
+
+                const buffer = await readFileAsArrayBuffer(file);
+                const uInt8Array = new Uint8Array(buffer);
+                currentDb = new SQL.Database(uInt8Array);
+                
+                // 获取所有表名 (排除系统表)
+                const tableResult = currentDb.exec("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'srid_metadata'");
+                const tableNames = tableResult.length > 0 ? tableResult[0].values.flat() : [];
+
+                // 填充下拉菜单
+                tableSelect.innerHTML = '<option value="">-- 请选择一个表 --</option>';
+                tableNames.forEach(name => {
+                    tableSelect.innerHTML += `<option value="${name}">${name}</option>`;
+                });
+
+                if (tableNames.length > 0) {
+                    tableSelectorContainer.style.display = 'block';
+                    dataViewer.innerHTML = '数据库加载成功。请在上方下拉菜单中选择一个表来查看数据。';
+                } else {
+                    dataViewer.innerHTML = '数据库中没有用户定义的表。';
+                }
+
+            } catch (e) {
+                errorMessage.textContent = '加载或解析数据库文件时发生错误：' + e.message;
+                dataViewer.innerHTML = '加载失败。';
+                console.error(e);
+            }
+        });
+        
+        // 3. 表格选择处理器：查询并显示数据
+        tableSelect.addEventListener('change', () => {
+            viewTableData(tableSelect.value);
+        });
+
+        function viewTableData(tableName) {
+            if (!tableName || !currentDb) {
+                dataViewer.innerHTML = '请选择一个表或加载一个数据库。';
+                return;
+            }
+
+            dataViewer.innerHTML = `正在查询表 <strong>${tableName}</strong>...`;
+
+            try {
+                // a. 查询表数据 (限制 100 行)
+                const dataResult = currentDb.exec(`SELECT * FROM ${JSON.stringify(tableName)} LIMIT 100`);
+                
+                // b. 查询表结构
+                const schemaResult = currentDb.exec(`PRAGMA table_info(${JSON.stringify(tableName)})`);
+                const schemaMap = {};
+                if (schemaResult.length > 0) {
+                    schemaResult[0].values.forEach(colInfo => {
+                        schemaMap[colInfo[1]] = colInfo[2]; // Map: columnName -> Type
+                    });
+                }
+
+
+                let dataHtml = `<h3>表: ${tableName} (显示前 100 行数据)</h3>`;
+                
+                if (dataResult.length === 0 || dataResult[0].values.length === 0) {
+                    dataHtml += '<p>该表没有数据。</p>';
+                } else {
+                    const columns = dataResult[0].columns;
+                    const rows = dataResult[0].values;
+                    
+                    dataHtml += '<table border="0">';
+                    
+                    // 头部 (Header Row)
+                    dataHtml += '<thead><tr>';
+                    columns.forEach(col => {
+                        const type = schemaMap[col] || '';
+                        dataHtml += `<th title="数据类型: ${type}">${col} <small>(${type})</small></th>`;
+                    });
+                    dataHtml += '</tr></thead>';
+                    
+                    // 数据行 (Data Rows)
+                    dataHtml += '<tbody>';
+                    rows.forEach(row => {
+                        dataHtml += '<tr>';
+                        row.forEach(cell => {
+                            // 将 null 转换显示为 "NULL"，防止空单元格
+                            dataHtml += `<td>${cell === null ? '<span style="color:#aaa;">NULL</span>' : cell}</td>`;
+                        });
+                        dataHtml += '</tr>';
+                    });
+                    dataHtml += '</tbody>';
+                    dataHtml += '</table>';
+                }
+                
+                dataViewer.innerHTML = dataHtml;
+
+            } catch (e) {
+                dataViewer.innerHTML = `<p class="error">查询数据时出错：${e.message}</p>`;
+                console.error(e);
+            }
+        }
+
+        // 4. 辅助函数：将 File 对象读取为 ArrayBuffer
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error('读取文件失败'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        initDatabase();
+    </script>
+
+</body>
+</html>

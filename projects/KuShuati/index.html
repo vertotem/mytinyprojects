@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <title>智能刷题平台</title>
+    
+    <!-- 使用优化的现代样式 -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- MathJax配置 -->
+    <script src="lib/mathjax-config.js"></script>
+    <script src="lib/mathjax/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- 导航系统 - 保持原有逻辑，使用新样式 -->
+        <header class="nav-system">
+            <div class="nav-container">
+                <div class="nav-brand">
+                    <span class="brand-icon">🧠</span>
+                    <span>智能刷题</span>
+                </div>
+                <nav class="nav-tabs">
+                    <button @click="currentView = 'home'" :class="{active: currentView === 'home'}">
+                        <span class="nav-icon">🏠</span>首页
+                    </button>
+                    <button @click="enterPracticeMode" :class="{active: currentView === 'practice'}">
+                        <span class="nav-icon">▶️</span>练习模式
+                    </button>
+                    <button @click="currentView = 'exam'" :class="{active: currentView === 'exam'}">
+                        <span class="nav-icon">⏰</span>考试模式
+                    </button>
+                    <button @click="currentView = 'notebook'" :class="{active: currentView === 'notebook'}">
+                        <span class="nav-icon">📖</span>错题本
+                    </button>
+                    <button @click="currentView = 'bank-management'" :class="{active: currentView === 'bank-management'}">
+                        <span class="nav-icon">💾</span>题库管理
+                    </button>
+                    <button @click="currentView = 'settings'" :class="{active: currentView === 'settings'}">
+                        <span class="nav-icon">⚙️</span>设置
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <main class="main-container">
+            <!-- 首页 - 完全保持原有逻辑 -->
+            <div v-if="currentView === 'home'" class="view-home">
+                <div class="dashboard-grid">
+                    <section class="welcome-card">
+                        <div class="welcome-content">
+                            <h1>欢迎使用智能刷题平台</h1>
+                            <p>纯前端刷题平台，支持题库管理、错题记录和模拟考试</p>
+                        </div>
+                        <div class="welcome-visual">
+                            <div class="geometric-shape"></div>
+                        </div>
+                    </section>
+
+                    <!-- 加载进度按钮 - 只有保存过进度时才显示 -->
+                    <section v-if="hasSavedProgress" class="load-progress-section">
+                        <div class="action-card highlight">
+                            <div class="card-icon">📂</div>
+                            <h3>继续学习</h3>
+                            <p>加载之前保存的练习进度</p>
+                            <button @click="loadSavedProgress" class="btn-success">加载进度</button>
+                        </div>
+                    </section>
+
+                    <section class="actions-grid">
+                        <div class="action-card primary">
+                            <div class="card-icon">📤</div>
+                            <h3>题库管理</h3>
+                            <p>导入题库文件，管理你的学习资源</p>
+                            <input type="file" @change="importQuestionBank" accept=".zip" style="display: none;" ref="fileInput">
+                            <button @click="$refs.fileInput.click()" class="btn-primary">导入题库</button>
+                        </div>
+
+                        <div class="action-card secondary">
+                            <div class="card-icon">🎯</div>
+                            <h3>开始练习</h3>
+                            <p>选择题库开始刷题练习</p>
+                            <button @click="enterPracticeMode" class="btn-secondary">开始练习</button>
+                        </div>
+
+                        <div class="action-card accent">
+                            <div class="card-icon">⚡</div>
+                            <h3>模拟考试</h3>
+                            <p>进行限时模拟考试</p>
+                            <button @click="currentView = 'exam'" class="btn-accent">模拟考试</button>
+                        </div>
+                    </section>
+
+                    <section class="stats-panel">
+                        <h2>学习统计</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ stats.totalQuestions }}</div>
+                                <div class="stat-label">总题数</div>
+                                <div class="stat-icon">📄</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ stats.practiceCount }}</div>
+                                <div class="stat-label">练习次数</div>
+                                <div class="stat-icon">🔄</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ stats.wrongCount }}</div>
+                                <div class="stat-label">错题数</div>
+                                <div class="stat-icon">❌</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ stats.accuracy }}%</div>
+                                <div class="stat-label">正确率</div>
+                                <div class="stat-icon">🎯</div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- 练习模式 - 完全保持原有逻辑 -->
+            <div v-if="currentView === 'practice'" class="view-practice">
+                <div v-if="!practiceStarted" class="practice-setup">
+                    <div class="setup-header">
+                        <h1>练习设置</h1>
+                    </div>
+                    <div class="bank-selection">
+                        <h2>选择题库</h2>
+                        <div class="bank-grid">
+                            <label v-for="bank in practiceBanks" :key="bank.id" class="bank-card">
+                                <input type="checkbox" v-model="selectedBanks" :value="bank.id">
+                                <div class="bank-content">
+                                    <div class="bank-info">
+                                        <h3>{{ bank.name }}</h3>
+                                        <span class="question-count">{{ bank.questionCount }}题</span>
+                                    </div>
+                                    <div class="bank-check">✓</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setup-actions">
+                        <button @click="startPractice" class="btn-primary large" :disabled="selectedBanks.length === 0">开始练习</button>
+                    </div>
+                </div>
+
+                <div v-if="practiceStarted" class="practice-interface">
+                    <header class="practice-header">
+                        <div class="progress-section">
+                            <div class="progress-info">
+                                <span class="current-question">第 {{ currentQuestionIndex + 1 }} 题</span>
+                                <span class="total-questions">共 {{ practiceQuestions.length }} 题</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{width: ((currentQuestionIndex + 1) / practiceQuestions.length * 100) + '%'}"></div>
+                            </div>
+                        </div>
+                        <div class="header-actions">
+                            <button @click="saveProgressManually" class="btn-secondary">保存进度</button>
+                            <button @click="exitPractice" class="btn-ghost">退出练习</button>
+                        </div>
+                    </header>
+
+                    <div v-if="currentQuestion" class="question-workspace">
+                        <div class="question-card">
+                            <div class="question-content" v-html="currentQuestion.content_html"></div>
+                            
+                            <!-- 单选题 -->
+                            <div v-if="currentQuestion.type === 'single'" class="options-container">
+                                <div class="option-card" v-for="(option, key) in currentQuestion.options" :key="key">
+                                    <label class="option-label">
+                                        <input type="radio" :name="'question_' + currentQuestion.id" :value="key" v-model="userAnswer" :disabled="questionAnswered">
+                                        <div class="option-indicator">⚪</div>
+                                        <div class="option-content" v-html="option"></div>
+                                    </label>
+                                </div>
+                                <div v-if="!questionAnswered" class="submit-section">
+                                    <button @click="submitChoiceAnswer" class="btn-primary">提交答案</button>
+                                </div>
+                                <div v-if="questionAnswered" class="results-section">
+                                    <div class="answer-feedback">
+                                        <div v-if="checkAnswer()" class="feedback correct">✓ 回答正确！</div>
+                                        <div v-else class="feedback incorrect">✗ 回答错误</div>
+                                    </div>
+                                    <div class="reference-answer">
+                                        <h3>参考答案：</h3>
+                                        <div class="answer-content" v-html="currentQuestion.reference_answer_html"></div>
+                                    </div>
+                                    <div v-if="!checkAnswer()" class="wrong-actions">
+                                        <button @click="addToWrongNotebookManual" class="btn-warning">加入错题本</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 多选题 -->
+                            <div v-if="currentQuestion.type === 'multi'" class="options-container">
+                                <div class="option-card" v-for="(option, key) in currentQuestion.options" :key="key">
+                                    <label class="option-label">
+                                        <input type="checkbox" :value="key" v-model="userAnswer" :disabled="questionAnswered">
+                                        <div class="option-indicator checkbox">☐</div>
+                                        <div class="option-content" v-html="option"></div>
+                                    </label>
+                                </div>
+                                <div v-if="!questionAnswered" class="submit-section">
+                                    <button @click="submitChoiceAnswer" class="btn-primary">提交答案</button>
+                                </div>
+                                <div v-if="questionAnswered" class="results-section">
+                                    <div class="answer-feedback">
+                                        <div v-if="checkAnswer()" class="feedback correct">✓ 回答正确！</div>
+                                        <div v-else class="feedback incorrect">✗ 回答错误</div>
+                                    </div>
+                                    <div class="reference-answer">
+                                        <h3>参考答案：</h3>
+                                        <div class="answer-content" v-html="currentQuestion.reference_answer_html"></div>
+                                    </div>
+                                    <div v-if="!checkAnswer()" class="wrong-actions">
+                                        <button @click="addToWrongNotebookManual" class="btn-warning">加入错题本</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 大题（根据用户设置显示点击或输入模式） -->
+                            <div v-if="currentQuestion.type.startsWith('large')" class="large-question-container">
+                                <!-- 点击模式 -->
+                                <div v-if="settings.largeQuestionMode === 'click'">
+                                    <div v-if="!showAnswer" class="thinking-mode">
+                                        <div class="mode-indicator">
+                                            <div class="mode-icon">💡</div>
+                                            <p>当前为点击模式，请先思考答案</p>
+                                        </div>
+                                        <button @click="showLargeAnswer" class="btn-primary">我想好了</button>
+                                    </div>
+                                    <div v-if="showAnswer" class="results-section">
+                                        <div class="reference-answer">
+                                            <h3>参考答案：</h3>
+                                            <div class="answer-content" v-html="currentQuestion.reference_answer_html"></div>
+                                        </div>
+                                        <div class="self-judgment">
+                                            <p>请根据参考答案判断你的答案：</p>
+                                            <div class="judgment-buttons">
+                                                <button @click="selfJudge(true)" class="btn-success">我答对了</button>
+                                                <button @click="selfJudge(false)" class="btn-danger">我答错了</button>
+                                            </div>
+                                        </div>
+                                        <div class="wrong-actions">
+                                            <button @click="addToWrongNotebookManual" class="btn-warning">加入错题本</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- 输入模式 -->
+                                <div v-if="settings.largeQuestionMode === 'input'">
+                                    <div v-if="!showAnswer" class="input-mode">
+                                        <div class="mode-indicator">
+                                            <div class="mode-icon">✏️</div>
+                                            <p>当前为输入模式，请输入你的答案</p>
+                                        </div>
+                                        <textarea v-model="userAnswer" placeholder="请输入你的答案..." class="answer-textarea"></textarea>
+                                        <button @click="submitLargeAnswer" class="btn-primary">提交答案</button>
+                                    </div>
+                                    <div v-if="showAnswer" class="results-section">
+                                        <div class="user-answer">
+                                            <h3>你的答案：</h3>
+                                            <div class="answer-content">{{ userAnswer }}</div>
+                                        </div>
+                                        <div class="reference-answer">
+                                            <h3>参考答案：</h3>
+                                            <div class="answer-content" v-html="currentQuestion.reference_answer_html"></div>
+                                        </div>
+                                        <div class="self-judgment">
+                                            <p>请根据参考答案判断你的答案：</p>
+                                            <div class="judgment-buttons">
+                                                <button @click="selfJudge(true)" class="btn-success">我做对了</button>
+                                                <button @click="selfJudge(false)" class="btn-danger">我做错了</button>
+                                            </div>
+                                        </div>
+                                        <div class="wrong-actions">
+                                            <button @click="addToWrongNotebookManual" class="btn-warning">加入错题本</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="showMasteryLevel" class="mastery-selection">
+                                <h3>请选择你对这道题的掌握程度：</h3>
+                                <div class="mastery-buttons">
+                                    <button @click="setMasteryLevel('completely')" class="btn-success">完全掌握</button>
+                                    <button @click="setMasteryLevel('partially')" class="btn-warning">基本掌握</button>
+                                    <button @click="setMasteryLevel('vague')" class="btn-danger">一知半解</button>
+                                </div>
+                            </div>
+
+                            <div v-if="canProceed" class="question-navigation">
+                                <button @click="prevQuestion" :disabled="currentQuestionIndex === 0" class="btn-ghost">上一题</button>
+                                <button @click="nextQuestion" class="btn-primary">下一题</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 考试模式 -->
+            <div v-if="currentView === 'exam'" class="view-practice">
+                <div v-if="!examStarted" class="practice-setup">
+                    <div class="setup-header">
+                        <h1>⏰ 考试设置</h1>
+                    </div>
+                    <div class="bank-selection">
+                        <h2>选择试卷</h2>
+                        <div v-if="examPapers.length === 0" class="view-placeholder">
+                            <p>暂无考试题库，请导入支持考试模式的题库</p>
+                        </div>
+                        <div class="bank-grid">
+                            <label v-for="paper in examPapers" :key="paper.id" class="bank-card">
+                                <input type="radio" v-model="selectedPaper" :value="paper.id">
+                                <div class="bank-content">
+                                    <div class="bank-info">
+                                        <h3>{{ paper.name }}</h3>
+                                        <span class="question-count">{{ paper.questionCount }}题, {{ paper.timeLimit }}分钟</span>
+                                    </div>
+                                    <div class="bank-check">✓</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setup-actions">
+                        <button @click="startExam" class="btn-primary large" :disabled="!selectedPaper">开始考试</button>
+                    </div>
+                </div>
+
+                <div v-if="examStarted" class="practice-interface">
+                    <header class="practice-header">
+                        <div class="progress-section">
+                            <div class="progress-info">
+                                <span class="current-question">{{ selectedPaperInfo.name }}</span>
+                                <span class="total-questions">第 {{ currentQuestionIndex + 1 }} 题 / 共 {{ examQuestions.length }} 题</span>
+                            </div>
+                            <div class="progress-info">
+                                <span class="current-question">⏰ 剩余时间: {{ formatTime(timeLeft) }}</span>
+                            </div>
+                        </div>
+                        <div class="header-actions">
+                            <button @click="saveProgressManually" class="btn-secondary">保存进度</button>
+                            <button @click="exitExam" class="btn-ghost">退出考试</button>
+                        </div>
+                    </header>
+
+                    <div class="question-workspace">
+                        <div class="stats-grid" style="margin-bottom: 2rem;">
+                            <button v-for="(q, index) in examQuestions" :key="index" 
+                                    @click="goToQuestion(index)"
+                                    :class="['stat-card', {
+                                        'btn-primary': index === currentQuestionIndex,
+                                        'btn-success': examAnswers[index] !== undefined && index !== currentQuestionIndex
+                                    }]"
+                                    style="min-height: 44px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                {{ index + 1 }}
+                            </button>
+                        </div>
+
+                        <div v-if="currentQuestion" class="question-card">
+                            <div class="question-content" v-html="currentQuestion.content_html"></div>
+                            
+                            <!-- 选择题选项 -->
+                            <div v-if="currentQuestion.type === 'single' || currentQuestion.type === 'multi'" class="options-container">
+                                <div class="option-card" v-for="(option, key) in currentQuestion.options" :key="key">
+                                    <label class="option-label">
+                                        <input :type="currentQuestion.type === 'single' ? 'radio' : 'checkbox'" 
+                                               :name="'exam_question_' + currentQuestion.id" 
+                                               :value="key" 
+                                               v-model="examAnswers[currentQuestionIndex]">
+                                        <div class="option-indicator">{{ currentQuestion.type === 'single' ? '⚪' : '☐' }}</div>
+                                        <div class="option-content" v-html="option"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 大题 -->
+                            <div v-if="currentQuestion.type.startsWith('large')" class="large-question-container">
+                                <div class="input-mode">
+                                    <textarea v-model="examAnswers[currentQuestionIndex]" 
+                                              placeholder="请输入你的答案..." 
+                                              class="answer-textarea"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="question-navigation">
+                                <button @click="prevQuestion" :disabled="currentQuestionIndex === 0" class="btn-ghost">上一题</button>
+                                <button @click="nextQuestion" :disabled="currentQuestionIndex === examQuestions.length - 1" class="btn-ghost">下一题</button>
+                                <button @click="submitExam" class="btn-danger">提交试卷</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 错题本 -->
+            <div v-if="currentView === 'notebook'" class="view-practice">
+                <div class="practice-setup">
+                    <div class="setup-header">
+                        <h1>📖 错题本管理</h1>
+                        <button @click="showCreateNotebook = true" class="btn-primary">新建错题本</button>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div v-for="notebook in notebooks" :key="notebook.id" class="action-card">
+                            <div class="card-icon">📖</div>
+                            <h3>{{ notebook.name }}</h3>
+                            <p>{{ notebook.questionCount }} 道错题</p>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button @click="viewNotebook(notebook.id)" class="btn-secondary">查看</button>
+                                <button @click="practiceNotebook(notebook.id)" class="btn-primary">重刷</button>
+                                <button @click="deleteNotebook(notebook.id)" class="btn-danger">删除</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 创建错题本对话框 -->
+                    <div v-if="showCreateNotebook" class="modal-overlay" @click="showCreateNotebook = false">
+                        <div class="modal-card" @click.stop>
+                            <header class="modal-header">
+                                <h3>新建错题本</h3>
+                                <button @click="showCreateNotebook = false" class="btn-ghost">❌</button>
+                            </header>
+                            <div class="modal-content">
+                                <div class="notebook-selector">
+                                    <label>错题本名称：</label>
+                                    <input v-model="newNotebookName" placeholder="请输入错题本名称" style="width: 100%; padding: 0.75rem; border: 2px solid var(--gray-200); font-size: 1rem;">
+                                </div>
+                            </div>
+                            <footer class="modal-actions">
+                                <button @click="createNotebook" class="btn-primary">创建</button>
+                                <button @click="showCreateNotebook = false" class="btn-ghost">取消</button>
+                            </footer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 错题本详情查看 -->
+            <div v-if="currentView === 'notebook-detail'" class="view-practice">
+                <div class="practice-interface">
+                    <header class="practice-header">
+                        <div class="progress-section">
+                            <button @click="closeNotebookDetail" class="btn-ghost">← 返回</button>
+                            <div class="progress-info">
+                                <span class="current-question">{{ viewingNotebook?.name }} - 错题详情</span>
+                                <span class="total-questions">共 {{ notebookQuestions.length }} 道错题</span>
+                            </div>
+                        </div>
+                    </header>
+                    
+                    <div class="question-workspace">
+                        <div v-for="(item, index) in notebookQuestions" :key="item.id" class="question-card" style="margin-bottom: 2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 1rem; background: var(--gray-100);">
+                                <span style="font-weight: 600;">第 {{ index + 1 }} 题</span>
+                                <span style="background: var(--danger); color: white; padding: 0.25rem 0.5rem; font-size: 0.8rem;">错误 {{ item.error_count }} 次</span>
+                                <span :style="{
+                                    background: item.user_mastery_level === 'completely' ? 'var(--success)' : 
+                                               item.user_mastery_level === 'partially' ? 'var(--warning)' : 'var(--danger)',
+                                    color: 'white', padding: '0.25rem 0.5rem', fontSize: '0.8rem'
+                                }">
+                                    {{ item.user_mastery_level === 'completely' ? '完全掌握' : 
+                                       item.user_mastery_level === 'partially' ? '基本掌握' : '一知半解' }}
+                                </span>
+                                <button @click="removeFromNotebook(item.id)" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">移除</button>
+                            </div>
+                            
+                            <div class="question-content" v-html="item.questionDetail?.content_html"></div>
+                            
+                            <div v-if="item.questionDetail?.options" class="options-container">
+                                <div v-for="(option, key) in item.questionDetail.options" :key="key" class="option-card">
+                                    <div style="display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.5rem;">
+                                        <span style="font-weight: bold; min-width: 20px;">{{ key }}.</span>
+                                        <span v-html="option"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; padding: 1rem; background: var(--gray-50);">
+                                <div style="padding: 0.5rem; background: rgba(220, 38, 38, 0.1); border-left: 4px solid var(--danger);">
+                                    <strong>你的答案：</strong>
+                                    <div>{{ getUserAnswerText(item.questionDetail, item.last_user_answer) }}</div>
+                                </div>
+                                <div style="padding: 0.5rem; background: rgba(22, 163, 74, 0.1); border-left: 4px solid var(--success);">
+                                    <strong>正确答案：</strong>
+                                    <div>{{ getCorrectAnswerText(item.questionDetail) || '见参考答案' }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="reference-answer">
+                                <h3>参考答案：</h3>
+                                <div class="answer-content" v-html="item.questionDetail?.reference_answer_html"></div>
+                            </div>
+                            
+                            <div style="margin-top: 1rem;">
+                                <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">备注：</label>
+                                <textarea 
+                                    v-model="item.user_remark" 
+                                    @blur="updateWrongQuestionRemark(item.id, item.user_remark)"
+                                    placeholder="点击添加备注..."
+                                    class="answer-textarea"
+                                    style="min-height: 80px;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 题库管理 -->
+            <div v-if="currentView === 'bank-management'" class="view-practice">
+                <div class="practice-setup">
+                    <div class="setup-header">
+                        <h1>💾 题库管理</h1>
+                        <div>
+                            <input type="file" @change="importQuestionBank" accept=".zip" style="display: none;" ref="bankFileInput">
+                            <button @click="$refs.bankFileInput.click()" class="btn-primary">导入题库</button>
+                        </div>
+                    </div>
+
+                    <div v-if="questionBanks.length === 0" class="view-placeholder">
+                        <p>暂无题库，请导入题库文件</p>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div v-for="bank in questionBanks" :key="bank.id" class="action-card">
+                            <div class="card-icon">💾</div>
+                            <h3>{{ bank.name }}</h3>
+                            <p>{{ bank.description || '无描述' }}</p>
+                            <div style="font-size: 0.875rem; color: var(--gray-600); margin: 0.5rem 0;">
+                                <div>📄 {{ bank.questionCount }} 道题目</div>
+                                <div v-if="bank.isExamMode">⏰ 考试模式</div>
+                                <div v-if="bank.timeLimit">⏱️ {{ bank.timeLimit }} 分钟</div>
+                                <div>📅 导入时间: {{ formatDate(bank.importTime) }}</div>
+                            </div>
+                            <button @click="deleteBank(bank.id)" class="btn-danger">删除</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 设置 -->
+            <div v-if="currentView === 'settings'" class="view-practice">
+                <div class="practice-setup">
+                    <div class="setup-header">
+                        <h1>⚙️ 设置</h1>
+                    </div>
+                    
+                    <div class="action-card" style="margin-bottom: 2rem;">
+                        <h3>答题设置</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                            <label style="font-weight: 500;">大题答题模式：</label>
+                            <select v-model="settings.largeQuestionMode" style="padding: 0.5rem; border: 2px solid var(--gray-200); font-size: 1rem;">
+                                <option value="click">点击模式（先思考再查看答案）</option>
+                                <option value="input">输入模式（输入答案后查看）</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="action-card" style="margin-bottom: 2rem;">
+                        <h3>云端同步</h3>
+                        <div style="margin-top: 1rem;">
+                            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; margin-bottom: 1rem;">
+                                <label style="font-weight: 500; display: flex; align-items: center;">上传URL：</label>
+                                <input v-model="settings.cloudSync.uploadUrl" 
+                                       placeholder="https://your-domain.com/upload.php" 
+                                       style="padding: 0.5rem; border: 2px solid var(--gray-200); font-size: 1rem;">
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; margin-bottom: 1rem;">
+                                <label style="font-weight: 500; display: flex; align-items: center;">密钥：</label>
+                                <input v-model="settings.cloudSync.apiKey" 
+                                       type="password"
+                                       placeholder="请输入API密钥" 
+                                       style="padding: 0.5rem; border: 2px solid var(--gray-200); font-size: 1rem;">
+                            </div>
+                            
+                            <small style="color: var(--gray-600); display: block; margin-bottom: 1rem;">
+                                配置云端同步服务器地址和密钥，用于备份和同步数据
+                            </small>
+                            
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                                <button @click="saveCloudSyncSettings" class="btn-secondary" :disabled="!settings.cloudSync.uploadUrl || !settings.cloudSync.apiKey">保存配置</button>
+                                <button @click="uploadToCloud" class="btn-primary" :disabled="!isCloudSyncConfigured || cloudSyncLoading">
+                                    {{ cloudSyncLoading ? '上传中...' : '上传到云端' }}
+                                </button>
+                                <button @click="downloadFromCloud" class="btn-primary" :disabled="!isCloudSyncConfigured || cloudSyncLoading">
+                                    {{ cloudSyncLoading ? '下载中...' : '从云端下载' }}
+                                </button>
+                            </div>
+                            
+                            <div v-if="cloudSyncMessage" :style="{
+                                padding: '0.75rem',
+                                borderRadius: '4px',
+                                marginBottom: '1rem',
+                                background: cloudSyncMessage.type === 'success' ? 'rgba(22, 163, 74, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                                border: '1px solid ' + (cloudSyncMessage.type === 'success' ? 'var(--success)' : 'var(--danger)'),
+                                color: cloudSyncMessage.type === 'success' ? 'var(--success)' : 'var(--danger)'
+                            }">
+                                {{ cloudSyncMessage.text }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-card">
+                        <h3>数据管理</h3>
+                        <div style="margin-top: 1rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                                <input type="checkbox" v-model="settings.exportWithQuestionBanks">
+                                <span>导出时包含题库数据</span>
+                            </label>
+                            <small style="color: var(--gray-600); display: block; margin-bottom: 1rem;">
+                                勾选后导出ZIP文件包含所有题库，否则仅导出用户数据(.db文件)
+                            </small>
+                            
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                                <button @click="exportData" class="btn-secondary">导出数据</button>
+                                <input type="file" @change="importData" accept=".db,.zip" style="display: none;" ref="importDataInput">
+                                <button @click="$refs.importDataInput.click()" class="btn-secondary">导入数据</button>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <button @click="clearAllData" class="btn-danger">清空所有数据</button>
+                                <small style="color: var(--gray-600);">⚠️ 此操作将删除所有题库、错题本和设置，不可恢复</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- 错题本选择对话框 - 保持原有逻辑 -->
+        <div v-if="showWrongQuestionModal" class="modal-overlay" @click="cancelAddWrongQuestion">
+            <div class="modal-card" @click.stop>
+                <header class="modal-header">
+                    <h3>选择错题本</h3>
+                    <button @click="cancelAddWrongQuestion" class="btn-ghost">❌</button>
+                </header>
+                
+                <div class="modal-content">
+                    <p class="modal-description">这道题答错了，是否要加入错题本？</p>
+                    
+                    <div class="notebook-selector">
+                        <label>选择错题本：</label>
+                        <select v-model="selectedNotebookForWrong">
+                            <option value="">不加入错题本</option>
+                            <option v-for="notebook in notebooks" :key="notebook.id" :value="notebook.id">
+                                {{ notebook.name }}
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <div v-if="selectedNotebookForWrong" class="remark-section">
+                        <label>备注（可选）：</label>
+                        <textarea v-model="wrongQuestionRemark" placeholder="记录一些心得或注意事项..." class="remark-textarea"></textarea>
+                    </div>
+                </div>
+                
+                <footer class="modal-actions">
+                    <button @click="addToWrongNotebook()" :disabled="!selectedNotebookForWrong" class="btn-primary">确定</button>
+                    <button @click="cancelAddWrongQuestion" class="btn-ghost">跳过</button>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载所有必需的库 - 完全保持原有顺序 -->
+    <script src="lib/vue.js"></script>
+    <script src="lib/sql.js"></script>
+    <script src="lib/jszip.min.js"></script>
+    <script src="lib/FileSaver.min.js"></script>
+    <script src="js/database.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+/* LaTeX Dark Web Theme
+ * Converted from Typora LaTeX Dark theme for general web use
+ * Academic paper style with dark theme
+ */
+
+:root {
+  /* Fonts */
+  --base-Latin-font: "Latin Modern Roman", "Latin Modern Roman 10", Times, "Times New Roman", serif;
+  --base-Chinese-font: "家族宋", "宋体-简", "华文宋体", "Noto Serif CJK SC", serif;
+  --base-font-size: 11pt;
+  
+  --code-font: "Latin Modern Mono", "Latin Modern Mono 10", "Consolas", "Courier New", monospace;
+  
+  --heading-Latin-font: var(--base-Latin-font);
+  --heading-Chinese-font: "华文黑体", "Microsoft YaHei", sans-serif;
+  
+  /* Colors - 覆盖Docute默认变量（暗色主题） */
+  --link-color: #8bb1f9;
+  --text-color: #dddddd;
+  --bg-color: #1e1e1e;
+  --border-color: #444444;
+  
+  /* Docute特定变量 - 暗色主题 */
+  --page-background: #1e1e1e;
+  --main-background: #1e1e1e;
+  --header-background: #1e1e1e;
+  --header-text-color: #dddddd;
+  --sidebar-background: #1e1e1e;
+  --sidebar-link-color: #dddddd;
+  --sidebar-link-active-color: #8bb1f9;
+  --sidebar-link-arrow-color: #666;
+  --nav-link-color: #dddddd;
+  --nav-link-border-color: #8bb1f9;
+  --accent-color: #8bb1f9;
+  --inline-code-background: #2a2a2a;
+  --inline-code-color: #8bb1f9;
+  --code-block-background: #2a2a2a;
+  --code-block-text-color: #dddddd;
+  --code-block-shadow-width: 1px;
+  --code-block-shadow-color: #444;
+  --table-header-background: #2a2a2a;
+  --table-header-color: #dddddd;
+  --search-icon-color: #888;
+  --search-focus-icon-color: #8bb1f9;
+  --search-focus-border-color: #8bb1f9;
+  --search-result-background: #2a2a2a;
+  --search-result-hover-background: #333;
+  --highlighted-line-background: rgba(139, 177, 249, 0.1);
+  --highlighted-line-border-color: #8bb1f9;
+  
+  /* Typography */
+  --strong-weight: 900;
+  --base-line-height: 1.618em;
+}
+
+/* 统一容器宽度与默认主题一致 */
+.Wrap {
+  max-width: 1180px !important;
+}
+
+.layout-wide .Content {
+  max-width: 770px !important;
+}
+
+body {
+  padding: 0;
+  margin: 0 auto;
+  font-family: var(--base-Latin-font), var(--base-Chinese-font), serif;
+  font-size: var(--base-font-size);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  line-height: var(--base-line-height);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold;
+  page-break-after: avoid;
+  line-height: 1.2;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+h1 {
+  font-family: var(--heading-Latin-font), var(--heading-Chinese-font), serif;
+  text-align: center;
+  font-size: 1.9em;
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
+
+h2 {
+  font-family: var(--heading-Latin-font), var(--heading-Chinese-font), serif;
+  font-size: 1.5em;
+}
+
+h3 {
+  font-family: var(--heading-Latin-font), var(--heading-Chinese-font), serif;
+  font-size: 1.25em;
+}
+
+h4 {
+  font-family: var(--heading-Latin-font), "华文楷体", "KaiTi", serif;
+  font-size: 1.15em;
+}
+
+h5 {
+  font-family: var(--heading-Latin-font), "华文仿宋", "FangSong", serif;
+  font-size: 1.10em;
+}
+
+h6 {
+  font-family: var(--heading-Latin-font), "华文仿宋", "FangSong", serif;
+  font-size: 1.05em;
+}
+
+/* Paragraphs */
+p {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  text-align: left;
+  line-height: var(--base-line-height);
+}
+
+/* Links */
+a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Horizontal Rule */
+hr {
+  border: none;
+  border-top: solid 1px var(--border-color);
+  margin-top: 1.8em;
+  margin-bottom: 1.8em;
+}
+
+/* Strong */
+strong {
+  font-weight: var(--strong-weight);
+}
+
+/* Lists */
+ul {
+  list-style: disc;
+  padding-inline-start: 2em;
+}
+
+ul ul {
+  list-style: "–   ";
+}
+
+ul ul ul {
+  list-style: "◦  ";
+}
+
+ol {
+  list-style: decimal;
+  padding-inline-start: 2em;
+}
+
+li {
+  position: relative;
+  margin: 0.3em 0;
+}
+
+/* Blockquote */
+blockquote {
+  font-style: normal;
+  font-family: var(--base-Latin-font), var(--base-Chinese-font), serif;
+  padding-left: 2em;
+  padding-right: 2em;
+  margin-left: 0;
+  border-left: 4px solid #b3b3b3;
+  margin: 1em 0;
+}
+
+blockquote p:first-child {
+  padding-top: 1ch;
+}
+
+blockquote p:last-child {
+  padding-bottom: 1ch;
+}
+
+/* Tables */
+table {
+  border-top: 1.2pt solid;
+  border-bottom: 1.2pt solid;
+  font-family: var(--base-Latin-font), var(--base-Chinese-font), serif;
+  text-align: center;
+  page-break-inside: avoid;
+  border-spacing: 6px;
+  width: auto;
+  margin: 1em auto;
+}
+
+thead {
+  border-bottom: 0.5pt solid;
+  font-weight: var(--strong-weight);
+}
+
+td {
+  padding: 2px 6px;
+}
+
+th {
+  padding: 0 6px;
+}
+
+/* Code */
+code {
+  font-family: var(--code-font), monospace;
+  color: #8bb1f9;
+  background-color: #161616;
+  box-shadow: 0 0 1px 1px #141414;
+  box-sizing: border-box;
+  margin: 0 2px;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+pre {
+  font-family: var(--code-font), monospace;
+  font-size: 0.95em;
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  padding: 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+pre code {
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Images */
+img {
+  page-break-inside: avoid;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em auto;
+}
+
+/* Print styles */
+@media print {
+  body {
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+    background-color: white;
+    color: black;
+  }
+  
+  @page {
+    margin: 1.8cm 2cm 1.2cm 2cm;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  body {
+    max-width: 100%;
+    padding: 1cm;
+    box-shadow: none;
+  }
+}
+

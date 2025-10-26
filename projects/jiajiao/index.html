@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preload" href="./in/nexmoe.css" as="style" />
+    <link rel="stylesheet" href="./in/nexmoe.css" />
+    <title>家教网</title>
+    <!-- SEO 优化 -->
+    <meta name="description" content="家教平台，为您提供优质的家教资源与信息">
+    <meta name="keywords" content="家教, 家教网, 教育, 辅导, 老师">
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        /* 无序列表样式 */
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        ul li {
+            position: relative;
+            padding-left: 15px; /* 增加了padding以容纳图片 */
+            margin-top: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        ul li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 15px;
+            height: 15px;
+            background-image: url('./in/folder-closed.png'); /* 关闭状态文件夹图片路径 */
+            background-size: cover;
+        }
+
+        ul li.expanded::before {
+            background-image: url('./in/folder-open.png'); /* 打开状态文件夹图片路径 */
+        }
+
+        /* 最后一级的列表项，背景图片更改 */
+        ul li:not(:has(ul))::before {
+            background-image: url('./in/file-icon.png'); /* 最后一级列表项的图片路径 */
+        }
+
+        ul li ul {
+            display: none;
+            padding-left: 20px;
+            border-left: 2px solid #ddd;
+        }
+
+        ul li.expanded > ul {
+            display: block;
+        }
+
+        /* 固定按钮样式 */
+        #toggle-all {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-image: url('./in/toggle-icon.png'); /* 按钮图标图片路径 */
+            background-size: cover;
+            background-color: transparent; /* 背景透明，只显示图片 */
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>家教平台</h1>
+<p style="text-align: center;">为您提供优质的家教资源与信息</p>
+
+<p style="text-align: center;"><a href="">【我想找家教】</a> | <a href="">【我想当家教】</a></p>
+
+<article style="padding: 20px;">
+    <h3>家教信息</h3>
+    <div id="content"></div>
+</article>
+
+<footer style="text-align: center;"><hr><a href="">【联系我们】</a></footer>
+
+<button id="toggle-all"></button>
+
+<script src="./in/marked.min.js"></script>
+<script>
+    // 解析URL参数
+    function getQueryParam(param) {
+        let urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    // 根据参数决定加载的Markdown文件
+    const page = getQueryParam('page') || 'index';
+    const filePath = `./page/${page}.md`;
+
+    // 加载Markdown文件并转换为HTML
+    fetch(filePath)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('File not found');
+            }
+            return response.text();
+        })
+        .then(text => {
+            document.getElementById('content').innerHTML = marked.parse(text);
+            initializeListToggle(); // 初始化列表展开/收起功能
+        })
+        .catch(error => {
+            document.getElementById('content').innerHTML = '<p>页面未找到，请<a href="index.html">点此返回首页</a></p>';
+        });
+
+    // 初始化列表展开/收起功能
+    function initializeListToggle() {
+    const lists = document.querySelectorAll('ul li');
+    lists.forEach(listItem => {
+        if (listItem.querySelector('ul')) {  // 仅在有子列表的情况下添加展开/收回功能
+            listItem.classList.add('collapsed'); // 默认收起
+            listItem.addEventListener('click', function (e) {
+                e.stopPropagation(); // 阻止事件冒泡
+                this.classList.toggle('expanded');
+            });
+        } else {
+            listItem.addEventListener('click', function (e) {
+                e.stopPropagation(); // 阻止事件冒泡，防止触发上级列表的展开/收回
+            });
+        }
+    });
+}
+
+    // 一键展开/收起功能
+    document.getElementById('toggle-all').addEventListener('click', function () {
+        const lists = document.querySelectorAll('ul li');
+        const isAnyExpanded = [...lists].some(listItem => listItem.classList.contains('expanded'));
+        lists.forEach(listItem => {
+            if (listItem.querySelector('ul')) {
+                if (isAnyExpanded) {
+                    listItem.classList.remove('expanded');
+                } else {
+                    listItem.classList.add('expanded');
+                }
+            }
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务表编辑器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --gap: 12px; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Noto Sans SC', system-ui, -apple-system, Segoe UI, Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        header { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #eee; padding: 10px 14px; z-index: 10; }
+        header h1 { margin: 0 0 6px; font-size: 18px; }
+        header .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        button { padding: 8px 12px; border: 1px solid #ddd; background: #fafafa; border-radius: 6px; cursor: pointer; }
+        button.primary { background: #1677ff; color: #fff; border-color: #1677ff; }
+        button.danger { background: #ff4d4f; color: #fff; border-color: #ff4d4f; }
+        main { padding: 14px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+        .card header { position: relative; border: 0; padding: 10px 12px; background: #f7f7f8; }
+        .card header h2 { margin: 0; font-size: 16px; }
+        .card .content { padding: 12px; display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        label { font-size: 12px; color: #555; display: block; margin-bottom: 6px; }
+        input[type="text"], input[type="date"] { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        textarea { width: 100%; min-height: 140px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; line-height: 1.5; resize: vertical; }
+        .hint { font-size: 12px; color: #888; }
+        footer { padding: 10px 14px 24px; color: #666; }
+        .note { background: #fff7e6; border: 1px solid #ffe7ba; color: #ad6800; padding: 8px 10px; border-radius: 6px; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>小饭桌每日任务表 · 编辑器</h1>
+        <div class="actions">
+            <button id="btn-save">保存</button>
+            <button id="btn-clear" class="danger">清空</button>
+            <button id="btn-generate" class="primary">生成并预览/打印</button>
+        </div>
+        <div class="hint">填写规则：使用 Markdown 无序列表（- 或 *）+ 缩进表示层级；支持 Tab 插入缩进；模板左右可填写不同内容；生成后以 GitHub 风格待办清单渲染。</div>
+    </header>
+    <main>
+        <div class="grid">
+            <section class="card" id="left-card">
+                <header><h2>左侧模板</h2></header>
+                <div class="content">
+                    <div class="row">
+                        <div>
+                            <label for="left-name">姓名</label>
+                            <input type="text" id="left-name" placeholder="请输入姓名">
+                        </div>
+                        <div>
+                            <label for="left-date">日期</label>
+                            <input type="date" id="left-date">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="left-inner">课内任务（Markdown）</label>
+                        <textarea id="left-inner" placeholder="- [ ] 语文作业\n  - [ ] 默写古诗一首\n- [ ] 数学练习\n  - [ ] P12 第3题"></textarea>
+                    </div>
+                    <div>
+                        <label for="left-outer">课外任务（Markdown）</label>
+                        <textarea id="left-outer" placeholder="- [ ] 朗读20分钟\n- [ ] 跳绳500个"></textarea>
+                    </div>
+                    <div>
+                        <label for="left-comment">老师评语（可选，Markdown 简单文本）</label>
+                        <textarea id="left-comment" placeholder="表现良好，继续保持哦！"></textarea>
+                    </div>
+                </div>
+            </section>
+            <section class="card" id="right-card">
+                <header><h2>右侧模板</h2></header>
+                <div class="content">
+                    <div class="row">
+                        <div>
+                            <label for="right-name">姓名</label>
+                            <input type="text" id="right-name" placeholder="请输入姓名">
+                        </div>
+                        <div>
+                            <label for="right-date">日期</label>
+                            <input type="date" id="right-date">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="right-inner">课内任务（Markdown）</label>
+                        <textarea id="right-inner" placeholder="- [ ] 英语单词背诵\n  - [ ] unit 1\n- [ ] 科学观察"></textarea>
+                    </div>
+                    <div>
+                        <label for="right-outer">课外任务（Markdown）</label>
+                        <textarea id="right-outer" placeholder="- [ ] 阅读30分钟\n- [ ] 跑步1公里"></textarea>
+                    </div>
+                    <div>
+                        <label for="right-comment">老师评语（可选，Markdown 简单文本）</label>
+                        <textarea id="right-comment" placeholder="今日完成度较高，赞！"></textarea>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <footer>
+            <div class="note">提示：保存会写入浏览器本地存储；生成会以 Base64 形式把数据传给模板页 `muban.html` 并打开新页面用于打印。</div>
+        </footer>
+    </main>
+
+    <script>
+        const els = {
+            leftName: document.getElementById('left-name'),
+            leftDate: document.getElementById('left-date'),
+            leftInner: document.getElementById('left-inner'),
+            leftOuter: document.getElementById('left-outer'),
+            leftComment: document.getElementById('left-comment'),
+            rightName: document.getElementById('right-name'),
+            rightDate: document.getElementById('right-date'),
+            rightInner: document.getElementById('right-inner'),
+            rightOuter: document.getElementById('right-outer'),
+            rightComment: document.getElementById('right-comment'),
+        };
+
+        const STORAGE_KEY = 'task_form_editor_v1';
+
+        function enableTabIndent(textarea) {
+            textarea.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+                    const value = this.value;
+                    // Shift+Tab: unindent current lines
+                    if (e.shiftKey) {
+                        const before = value.slice(0, start);
+                        const selected = value.slice(start, end);
+                        const after = value.slice(end);
+                        const lineStart = before.lastIndexOf('\n') + 1;
+                        const block = value.slice(lineStart, end);
+                        const unindented = block.replace(/^(\t|\s{2})/gm, '');
+                        const removedCount = block.length - unindented.length;
+                        const newBefore = value.slice(0, lineStart) + unindented;
+                        const newCursorStart = Math.max(lineStart, start - (start === lineStart ? 0 : (/(^\t|^\s{2})/m.test(block) ? 1 : 0)));
+                        this.value = newBefore + after;
+                        this.selectionStart = newCursorStart;
+                        this.selectionEnd = newCursorStart + unindented.length - (block.length - (end - lineStart));
+                        return;
+                    }
+                    // Normal Tab: indent
+                    if (start !== end) {
+                        const before = value.slice(0, start);
+                        const selected = value.slice(start, end);
+                        const after = value.slice(end);
+                        const indented = selected.replace(/^/gm, '\t');
+                        this.value = before + indented + after;
+                        this.selectionStart = start + 1;
+                        this.selectionEnd = end + indented.length - selected.length + 1;
+                    } else {
+                        this.value = value.slice(0, start) + '\t' + value.slice(end);
+                        this.selectionStart = this.selectionEnd = start + 1;
+                    }
+                }
+            });
+        }
+
+        [els.leftInner, els.leftOuter, els.rightInner, els.rightOuter, els.leftComment, els.rightComment].forEach(enableTabIndent);
+
+        function readForm() {
+            return {
+                left: {
+                    name: els.leftName.value || '',
+                    date: els.leftDate.value || '',
+                    inner: els.leftInner.value || '',
+                    outer: els.leftOuter.value || '',
+                    comment: els.leftComment.value || ''
+                },
+                right: {
+                    name: els.rightName.value || '',
+                    date: els.rightDate.value || '',
+                    inner: els.rightInner.value || '',
+                    outer: els.rightOuter.value || '',
+                    comment: els.rightComment.value || ''
+                }
+            };
+        }
+
+        function fillForm(data) {
+            if (!data) return;
+            if (data.left) {
+                els.leftName.value = data.left.name || '';
+                els.leftDate.value = data.left.date || '';
+                els.leftInner.value = data.left.inner || '';
+                els.leftOuter.value = data.left.outer || '';
+                els.leftComment.value = data.left.comment || '';
+            }
+            if (data.right) {
+                els.rightName.value = data.right.name || '';
+                els.rightDate.value = data.right.date || '';
+                els.rightInner.value = data.right.inner || '';
+                els.rightOuter.value = data.right.outer || '';
+                els.rightComment.value = data.right.comment || '';
+            }
+        }
+
+        function save() {
+            const data = readForm();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function load() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) fillForm(JSON.parse(raw));
+            } catch (e) { console.warn(e); }
+        }
+
+        function clearAll() {
+            Object.values(els).forEach(el => { if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') el.value = ''; });
+            localStorage.removeItem(STORAGE_KEY);
+        }
+
+        function encodeData(obj) {
+            const json = JSON.stringify(obj);
+            return btoa(unescape(encodeURIComponent(json)));
+        }
+
+        document.getElementById('btn-save').addEventListener('click', () => { save(); alert('已保存到本地'); });
+        document.getElementById('btn-clear').addEventListener('click', () => { if (confirm('确认清空所有内容？')) { clearAll(); } });
+        document.getElementById('btn-generate').addEventListener('click', () => {
+            const data = readForm();
+            save();
+            const encoded = encodeData(data);
+            const url = 'muban.html?data=' + encodeURIComponent(encoded);
+            window.open(url, '_blank');
+        });
+
+        load();
+    </script>
+</body>
+</html>
+

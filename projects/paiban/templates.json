@@ -1,0 +1,165 @@
+{
+  "default": {
+    "h1": {
+      "size": 32,
+      "font": "SimSun",
+      "alignment": "CENTER",
+      "spacing": { "before": 240, "after": 240 }
+    },
+    "h2": {
+      "size": 28,
+      "font": "SimHei",
+      "spacing": { "before": 240, "after": 120 }
+    },
+    "h3": {
+      "size": 28,
+      "font": "KaiTi",
+      "spacing": { "before": 240, "after": 120 }
+    },
+    "h4": {
+      "size": 28,
+      "font": "FangSong",
+      "bold": true,
+      "spacing": { "before": 240, "after": 120 }
+    },
+    "h5": {
+      "size": 28,
+      "font": "FangSong",
+      "spacing": { "before": 240, "after": 120 }
+    },
+    "paragraph": {
+      "size": 28,
+      "font": "FangSong",
+      "spacing": { "before": 120, "after": 120 },
+      "indent": { "firstLine": 560 }
+    },
+    "list": {
+      "size": 28,
+      "font": "FangSong",
+      "spacing": { "before": 120, "after": 120 },
+      "indent": { "firstLine": 560 }
+    },
+    "table": {
+      "size": 24,
+      "font": "FangSong",
+      "spacing": { "before": 120, "after": 120 },
+      "border": { "color": "000000", "size": 1 },
+      "header": {
+        "size": 24,
+        "font": "SimHei",
+        "bold": true,
+        "background": "E0E0E0"
+      }
+    }
+  },
+  "compact": {
+    "h1": {
+      "size": 28,
+      "font": "SimSun",
+      "alignment": "CENTER",
+      "spacing": { "before": 120, "after": 120 }
+    },
+    "h2": {
+      "size": 24,
+      "font": "SimHei",
+      "spacing": { "before": 120, "after": 60 }
+    },
+    "h3": {
+      "size": 24,
+      "font": "KaiTi",
+      "spacing": { "before": 120, "after": 60 }
+    },
+    "h4": {
+      "size": 24,
+      "font": "FangSong",
+      "bold": true,
+      "spacing": { "before": 120, "after": 60 }
+    },
+    "h5": {
+      "size": 24,
+      "font": "FangSong",
+      "spacing": { "before": 120, "after": 60 }
+    },
+    "paragraph": {
+      "size": 24,
+      "font": "FangSong",
+      "spacing": { "before": 60, "after": 60 },
+      "indent": { "firstLine": 480 }
+    },
+    "list": {
+      "size": 24,
+      "font": "FangSong",
+      "spacing": { "before": 60, "after": 60 },
+      "indent": { "firstLine": 480 }
+    },
+    "table": {
+      "size": 22,
+      "font": "FangSong",
+      "spacing": { "before": 60, "after": 60 },
+      "border": { "color": "000000", "size": 1 },
+      "header": {
+        "size": 22,
+        "font": "SimHei",
+        "bold": true,
+        "background": "E0E0E0"
+      }
+    }
+  },
+  "two-column": {
+    "h1": {
+      "size": 28,
+      "font": "SimSun",
+      "alignment": "CENTER",
+      "spacing": { "before": 120, "after": 120 }
+    },
+    "h2": {
+      "size": 24,
+      "font": "SimHei",
+      "spacing": { "before": 120, "after": 60 }
+    },
+    "h3": {
+      "size": 24,
+      "font": "KaiTi",
+      "spacing": { "before": 120, "after": 60 }
+    },
+    "h4": {
+      "size": 24,
+      "font": "FangSong",
+      "bold": true,
+      "spacing": { "before": 120, "after": 60 }
+    },
+    "h5": {
+      "size": 24,
+      "font": "FangSong",
+      "spacing": { "before": 120, "after": 60 }
+    },
+    "paragraph": {
+      "size": 24,
+      "font": "FangSong",
+      "spacing": { "before": 60, "after": 60 },
+      "indent": { "firstLine": 480 }
+    },
+    "list": {
+      "size": 24,
+      "font": "FangSong",
+      "spacing": { "before": 60, "after": 60 },
+      "indent": { "firstLine": 480 }
+    },
+    "table": {
+      "size": 22,
+      "font": "FangSong",
+      "spacing": { "before": 60, "after": 60 },
+      "border": { "color": "000000", "size": 1 },
+      "header": {
+        "size": 22,
+        "font": "SimHei",
+        "bold": true,
+        "background": "E0E0E0"
+      }
+    },
+    "columns": {
+      "count": 2,
+      "spacing": 720
+    }
+  }
+}

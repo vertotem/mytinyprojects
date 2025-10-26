@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF A3 切 A4（带预览，响应式）</title>
+    
+    <script src="./pdf-lib.min.js"></script>
+    
+    <script src="./pdf.min.js"></script>
+    <script>
+        // 必须配置 workerSrc
+        pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.min.js';
+    </script>
+    
+    <style>
+        /* 响应式基础 */
+        body { 
+            font-family: sans-serif; 
+            margin: 0; 
+            background-color: #f4f4f4; 
+            padding: 10px;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        /* 控制面板和预览区域的 Flex 布局 */
+        .main-content {
+            display: flex;
+            flex-wrap: wrap; /* 允许在小屏幕上换行 */
+            gap: 20px;
+        }
+        .control-panel, .visualization-container {
+            padding: 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 5px; 
+            background-color: #f9f9f9;
+        }
+        .control-panel {
+            flex: 1 1 300px; /* 最小宽度 300px，优先占据更多空间 */
+        }
+        .visualization-container {
+            flex: 2 1 500px; /* 最小宽度 500px，占据剩余空间 */
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 预览画布容器 */
+        #previewWrapper {
+            position: relative;
+            width: 100%;
+            height: auto;
+            max-width: 842px; /* 限制最大宽度，但响应式 */
+        }
+        #previewCanvas, #overlayCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 1px solid #333;
+            box-sizing: border-box;
+        }
+        #overlayCanvas {
+            z-index: 10; /* 确保切割线在 PDF 内容之上 */
+        }
+        
+        /* 拖拽控制点样式 */
+        .drag-handle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #007bff;
+            border: 3px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 20;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            touch-action: none; /* 防止触摸时的默认行为 */
+        }
+        
+        .drag-handle:hover {
+            background-color: #0056b3;
+            transform: scale(1.2);
+        }
+        
+        .drag-handle.dragging {
+            background-color: #ff6b6b;
+            transform: scale(1.3);
+        }
+        
+        /* 边界控制点 */
+        .boundary-handle {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: #28a745;
+            border: 3px solid white;
+            border-radius: 3px;
+            cursor: pointer;
+            z-index: 20;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            touch-action: none; /* 防止触摸时的默认行为 */
+        }
+        
+        .boundary-handle:hover {
+            background-color: #1e7e34;
+            transform: scale(1.2);
+        }
+        
+        .boundary-handle.dragging {
+            background-color: #ff6b6b;
+            transform: scale(1.3);
+        }
+        
+        /* 移动设备优化 */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .control-panel, .visualization-container {
+                flex: none;
+                width: 100%;
+            }
+            
+            .drag-handle {
+                width: 24px;
+                height: 24px;
+                border-width: 4px;
+            }
+            
+            .boundary-handle {
+                width: 20px;
+                height: 20px;
+                border-width: 4px;
+            }
+            
+            .info {
+                font-size: 14px;
+                padding: 8px;
+            }
+            
+            .control-panel button {
+                padding: 12px 15px;
+                font-size: 16px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            h2 {
+                font-size: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .drag-handle {
+                width: 28px;
+                height: 28px;
+                border-width: 5px;
+            }
+            
+            .boundary-handle {
+                width: 24px;
+                height: 24px;
+                border-width: 5px;
+            }
+            
+            .info {
+                font-size: 13px;
+            }
+        }
+        
+        /* 边界控制点位置调整 */
+        .boundary-handle.top, .boundary-handle.bottom {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .boundary-handle.left, .boundary-handle.right {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .boundary-handle.top-left {
+            top: 0;
+            left: 0;
+        }
+        
+        .boundary-handle.top-right {
+            top: 0;
+            right: 0;
+        }
+        
+        .boundary-handle.bottom-left {
+            bottom: 0;
+            left: 0;
+        }
+        
+        .boundary-handle.bottom-right {
+            bottom: 0;
+            right: 0;
+        }
+        
+        /* 辅助类 */
+        .info { margin-top: 15px; padding: 10px; background-color: #ffeeba; border: 1px solid #ffcc00; color: #856404; border-radius: 5px; }
+        .warning { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .control-panel button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; transition: background-color 0.3s; }
+        .control-panel button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>PDF A3 切 A4 工具</h1>
+
+    <div class="info">
+        提示：本工具在浏览器中纯前端运行，文件不会上传到任何服务器。
+    </div>
+    <div id="sizeWarning" class="info warning" style="display: none;">
+        **注意：** 原始文件尺寸信息缺失或无效，程序将**强制使用 A3 横向尺寸** ($842 \text{pts} \times 595 \text{pts}$) 进行切割。
+    </div>
+
+    <div class="main-content">
+        <div class="control-panel">
+            <label for="pdfFile">步骤 1: 上传 PDF 文件</label>
+            <input type="file" id="pdfFile" accept="application/pdf">
+
+            <br/><label for="splitMode" style="margin-top: 15px;">步骤 2: 选择切割方向</label>
+            <select id="splitMode">
+                <option value="vertical">垂直切割（长边对半分 - 左右两页）</option>
+                <option value="horizontal">水平切割（短边对半分 - 上下两页）</option>
+            </select>
+            
+            <button id="splitBtn" onclick="splitAndDownload()" disabled>步骤 3: 切割并生成 A4 PDF</button>
+            <button id="downloadBtn" style="display: none;">下载分割后的 PDF</button>
+
+            <p style="margin-top: 20px;">页面尺寸 (pts): <span id="pageDimensions">N/A</span></p>
+        </div>
+
+        <div class="visualization-container">
+            <h2>原始页面预览及切割示意</h2>
+            <div class="info" style="margin-bottom: 15px;">
+                <strong>拖拽调整说明：</strong><br>
+                • <span style="color: #007bff;">蓝色圆点</span>：拖拽调整分割线位置<br>
+                • <span style="color: #28a745;">绿色方块</span>：拖拽调整边界位置<br>
+                • 每部分将自动铺满A4页面<br>
+                <span class="mobile-hint" style="display: none; color: #666; font-size: 12px;">
+                    📱 移动设备：直接触摸拖拽控制点
+                </span>
+            </div>
+            <div id="previewWrapper">
+                <canvas id="previewCanvas"></canvas>
+                <canvas id="overlayCanvas"></canvas>
+                
+                <!-- 分割线拖拽控制点 -->
+                <div id="splitHandle" class="drag-handle" style="display: none;"></div>
+                
+                <!-- 边界控制点 -->
+                <div id="topHandle" class="boundary-handle top" style="display: none;"></div>
+                <div id="bottomHandle" class="boundary-handle bottom" style="display: none;"></div>
+                <div id="leftHandle" class="boundary-handle left" style="display: none;"></div>
+                <div id="rightHandle" class="boundary-handle right" style="display: none;"></div>
+            </div>
+            <p id="previewHint">请上传 PDF 文件以查看预览。</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // pdf-lib 部分
+    const { PDFDocument } = PDFLib;
+    
+    let originalPdfDoc = null;
+    let splitPdfBytes = null;
+    let pdfDataUrl = null; // 用于 pdf.js 渲染的 Data URL
+    let originalFileName = ''; // 【新增】用于存储原始文件名
+    
+    // 假定的 A3 横向尺寸
+    const ASSUMED_A3_WIDTH = 841.89; 
+    const ASSUMED_A3_HEIGHT = 595.28; 
+
+    let pageDims = { width: 0, height: 0 }; 
+    
+    // 拖拽相关变量
+    let isDragging = false;
+    let dragTarget = null;
+    let dragStartPos = { x: 0, y: 0 };
+    let customBoundaries = { top: 0, bottom: 1, left: 0, right: 1 }; // 相对位置 (0-1)
+    let customSplitPosition = 0.5; // 分割线位置 (0-1)
+
+    // DOM 元素
+    const pdfFileEl = document.getElementById('pdfFile');
+    const splitBtn = document.getElementById('splitBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const pageDimensionsEl = document.getElementById('pageDimensions');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const ctx = overlayCanvas.getContext('2d');
+    const splitModeEl = document.getElementById('splitMode');
+    const sizeWarningEl = document.getElementById('sizeWarning');
+    const previewWrapper = document.getElementById('previewWrapper');
+    const previewHint = document.getElementById('previewHint');
+    
+    // 拖拽控制点元素
+    const splitHandle = document.getElementById('splitHandle');
+    const topHandle = document.getElementById('topHandle');
+    const bottomHandle = document.getElementById('bottomHandle');
+    const leftHandle = document.getElementById('leftHandle');
+    const rightHandle = document.getElementById('rightHandle');
+
+    // --- PDF.js 渲染逻辑 ---
+    async function renderPagePreview(dataUrl, pageNumber = 1) {
+        previewHint.textContent = "正在加载预览...";
+        try {
+            const pdfDocument = await pdfjsLib.getDocument({ url: dataUrl }).promise;
+            const page = await pdfDocument.getPage(pageNumber);
+            const viewport = page.getViewport({ scale: 1.0 });
+
+            // 1. 设置 pageDims (pt 单位)
+            pageDims = { 
+                width: viewport.width, 
+                height: viewport.height 
+            };
+
+            // 2. 渲染 PDF 内容到 previewCanvas
+            const scaleFactor = previewWrapper.clientWidth / viewport.width;
+            const scaledViewport = page.getViewport({ scale: scaleFactor });
+
+            previewCanvas.height = scaledViewport.height;
+            previewCanvas.width = scaledViewport.width;
+
+            const renderContext = {
+                canvasContext: previewCanvas.getContext('2d'),
+                viewport: scaledViewport,
+            };
+            await page.render(renderContext).promise;
+
+            // 3. 调整 Wrapper 容器的高度以匹配渲染的 Canvas
+            previewWrapper.style.paddingTop = (scaledViewport.height / scaledViewport.width) * 100 + '%';
+            
+            // 4. 重新绘制切割示意图 (基于新的渲染尺寸)
+            drawVisualization(previewCanvas.width, previewCanvas.height, splitModeEl.value);
+
+            // 5. 更新状态显示
+            pageDimensionsEl.textContent = `${pageDims.width.toFixed(2)} pts x ${pageDims.height.toFixed(2)} pts`;
+            previewHint.textContent = "";
+
+            // 尺寸缺失检查 (针对切割逻辑的 pageDims)
+            if (!pageDims.width || !pageDims.height || pageDims.width <= 0 || pageDims.height <= 0 || isNaN(pageDims.width) || isNaN(pageDims.height)) {
+                // 如果尺寸无效或缺失，强制使用假定的 A3 尺寸
+                pageDims = { 
+                    width: ASSUMED_A3_WIDTH, 
+                    height: ASSUMED_A3_HEIGHT
+                };
+                pageDimensionsEl.textContent = `N/A (强制假定为 ${pageDims.width.toFixed(2)} pts x ${pageDims.height.toFixed(2)} pts)`;
+                sizeWarningEl.style.display = 'block';
+            } else {
+                 sizeWarningEl.style.display = 'none';
+            }
+
+
+        } catch (error) {
+            previewHint.textContent = "PDF 预览加载失败，文件可能损坏或格式不支持。";
+            console.error("PDF.js 渲染失败:", error);
+            splitBtn.disabled = true;
+        }
+    }
+
+    // --- 切割示意图逻辑 (现在使用 Canvas 的渲染尺寸) ---
+    function drawVisualization(width, height, mode) {
+        overlayCanvas.width = width;
+        overlayCanvas.height = height;
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.save();
+        
+        // 计算实际边界位置
+        const actualTop = customBoundaries.top * height;
+        const actualBottom = customBoundaries.bottom * height;
+        const actualLeft = customBoundaries.left * width;
+        const actualRight = customBoundaries.right * width;
+        
+        // 绘制边界框
+        ctx.strokeStyle = '#28a745';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.strokeRect(actualLeft, actualTop, actualRight - actualLeft, actualBottom - actualTop);
+        
+        // 绘制切割线
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([15, 8]); // 虚线
+
+        if (mode === 'vertical') {
+            const splitX = actualLeft + (actualRight - actualLeft) * customSplitPosition;
+            ctx.beginPath();
+            ctx.moveTo(splitX, actualTop);
+            ctx.lineTo(splitX, actualBottom);
+            ctx.stroke();
+
+            // 标记文本
+            ctx.fillStyle = 'red';
+            ctx.font = '24px sans-serif';
+            ctx.textAlign = 'center';
+            const leftCenterX = actualLeft + (splitX - actualLeft) / 2;
+            const rightCenterX = splitX + (actualRight - splitX) / 2;
+            ctx.fillText("左页", leftCenterX, (actualTop + actualBottom) / 2);
+            ctx.fillText("右页", rightCenterX, (actualTop + actualBottom) / 2);
+
+        } else if (mode === 'horizontal') {
+            const splitY = actualTop + (actualBottom - actualTop) * customSplitPosition;
+            ctx.beginPath();
+            ctx.moveTo(actualLeft, splitY);
+            ctx.lineTo(actualRight, splitY);
+            ctx.stroke();
+
+            // 标记文本
+            ctx.fillStyle = 'red';
+            ctx.font = '24px sans-serif';
+            ctx.textAlign = 'center';
+            const topCenterY = actualTop + (splitY - actualTop) / 2;
+            const bottomCenterY = splitY + (actualBottom - splitY) / 2;
+            ctx.fillText("上页", (actualLeft + actualRight) / 2, topCenterY);
+            ctx.fillText("下页", (actualLeft + actualRight) / 2, bottomCenterY);
+        }
+        ctx.restore();
+        
+        // 更新控制点位置
+        updateControlHandles(width, height, mode);
+    }
+    
+    // 更新控制点位置
+    function updateControlHandles(width, height, mode) {
+        const actualTop = customBoundaries.top * height;
+        const actualBottom = customBoundaries.bottom * height;
+        const actualLeft = customBoundaries.left * width;
+        const actualRight = customBoundaries.right * width;
+        
+        // 显示控制点
+        splitHandle.style.display = 'block';
+        topHandle.style.display = 'block';
+        bottomHandle.style.display = 'block';
+        leftHandle.style.display = 'block';
+        rightHandle.style.display = 'block';
+        
+        // 设置分割线控制点位置
+        if (mode === 'vertical') {
+            const splitX = actualLeft + (actualRight - actualLeft) * customSplitPosition;
+            splitHandle.style.left = (splitX - 10) + 'px';
+            splitHandle.style.top = (actualTop + (actualBottom - actualTop) / 2 - 10) + 'px';
+        } else {
+            const splitY = actualTop + (actualBottom - actualTop) * customSplitPosition;
+            splitHandle.style.left = (actualLeft + (actualRight - actualLeft) / 2 - 10) + 'px';
+            splitHandle.style.top = (splitY - 10) + 'px';
+        }
+        
+        // 设置边界控制点位置
+        topHandle.style.top = (actualTop - 8) + 'px';
+        bottomHandle.style.top = (actualBottom - 8) + 'px';
+        leftHandle.style.left = (actualLeft - 8) + 'px';
+        rightHandle.style.left = (actualRight - 8) + 'px';
+    }
+    
+    // --- 拖拽事件处理 ---
+    function setupDragHandlers() {
+        const handles = [splitHandle, topHandle, bottomHandle, leftHandle, rightHandle];
+        
+        handles.forEach(handle => {
+            // 鼠标事件
+            handle.addEventListener('mousedown', startDrag);
+            
+            // 触摸事件
+            handle.addEventListener('touchstart', startDrag, { passive: false });
+        });
+        
+        // 鼠标事件
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+        
+        // 触摸事件
+        document.addEventListener('touchmove', drag, { passive: false });
+        document.addEventListener('touchend', endDrag);
+    }
+    
+    function startDrag(e) {
+        e.preventDefault();
+        isDragging = true;
+        dragTarget = e.target;
+        
+        // 处理触摸事件和鼠标事件
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        dragStartPos = { x: clientX, y: clientY };
+        dragTarget.classList.add('dragging');
+    }
+    
+    function drag(e) {
+        if (!isDragging || !dragTarget) return;
+        
+        e.preventDefault();
+        
+        const rect = previewWrapper.getBoundingClientRect();
+        
+        // 处理触摸事件和鼠标事件
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        const width = previewCanvas.width;
+        const height = previewCanvas.height;
+        
+        // 限制在画布范围内
+        const clampedX = Math.max(0, Math.min(width, x));
+        const clampedY = Math.max(0, Math.min(height, y));
+        
+        if (dragTarget === splitHandle) {
+            // 拖拽分割线
+            if (splitModeEl.value === 'vertical') {
+                customSplitPosition = (clampedX - customBoundaries.left * width) / ((customBoundaries.right - customBoundaries.left) * width);
+            } else {
+                customSplitPosition = (clampedY - customBoundaries.top * height) / ((customBoundaries.bottom - customBoundaries.top) * height);
+            }
+            customSplitPosition = Math.max(0.1, Math.min(0.9, customSplitPosition)); // 限制在10%-90%之间
+        } else if (dragTarget === topHandle) {
+            customBoundaries.top = Math.max(0, Math.min(customBoundaries.bottom - 0.1, clampedY / height));
+        } else if (dragTarget === bottomHandle) {
+            customBoundaries.bottom = Math.max(customBoundaries.top + 0.1, Math.min(1, clampedY / height));
+        } else if (dragTarget === leftHandle) {
+            customBoundaries.left = Math.max(0, Math.min(customBoundaries.right - 0.1, clampedX / width));
+        } else if (dragTarget === rightHandle) {
+            customBoundaries.right = Math.max(customBoundaries.left + 0.1, Math.min(1, clampedX / width));
+        }
+        
+        // 重新绘制
+        drawVisualization(width, height, splitModeEl.value);
+    }
+    
+    function endDrag() {
+        if (isDragging && dragTarget) {
+            dragTarget.classList.remove('dragging');
+        }
+        isDragging = false;
+        dragTarget = null;
+    }
+
+    // --- 事件处理和 PDF-LIB 切割逻辑 ---
+
+    // 重新渲染预览和切割示意图 (响应式调整或模式切换)
+    function updatePreview() {
+        if (pdfDataUrl) {
+            renderPagePreview(pdfDataUrl); 
+        } else {
+             drawVisualization(ASSUMED_A3_WIDTH, ASSUMED_A3_HEIGHT, splitModeEl.value);
+        }
+    }
+
+    // 监听窗口大小变化（实现响应式）
+    window.addEventListener('resize', () => {
+        if (pdfDataUrl) {
+            // 重新渲染预览和示意图
+            updatePreview();
+        }
+    });
+
+    // 文件上传处理
+    pdfFileEl.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        splitBtn.disabled = true;
+        
+        try {
+            // 【新增】存储原始文件名
+            originalFileName = file.name;
+
+            const arrayBuffer = await file.arrayBuffer();
+            originalPdfDoc = await PDFDocument.load(arrayBuffer);
+            
+            if (originalPdfDoc.getPageCount() === 0) {
+                throw new Error("PDF 文件不包含任何页面。");
+            }
+
+            // 创建 Data URL 用于 pdf.js 渲染
+            const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+            pdfDataUrl = URL.createObjectURL(blob);
+            
+            await renderPagePreview(pdfDataUrl);
+            
+            // 重置自定义边界为默认值
+            customBoundaries = { top: 0, bottom: 1, left: 0, right: 1 };
+            customSplitPosition = 0.5;
+            
+            splitBtn.disabled = false;
+            downloadBtn.style.display = 'none';
+            splitPdfBytes = null;
+
+        } catch (error) {
+            alert('加载 PDF 文件失败: ' + error.message);
+            console.error(error);
+            splitBtn.disabled = true;
+            pageDimensionsEl.textContent = 'N/A';
+            previewHint.textContent = "PDF 文件加载失败。";
+        }
+    });
+
+    // 切割模式改变时重新绘制可视化
+    splitModeEl.addEventListener('change', () => {
+        // 重置分割线位置为中间
+        customSplitPosition = 0.5;
+        
+        if (pdfDataUrl) {
+            // 只需要重绘切割示意图
+            updatePreview();
+        } else {
+            drawVisualization(ASSUMED_A3_WIDTH, ASSUMED_A3_HEIGHT, splitModeEl.value);
+        }
+    });
+
+    // --- PDF-LIB 切割逻辑 (保持多页处理和 embedPage) ---
+    async function splitAndDownload() {
+        if (!originalPdfDoc) {
+            alert('请先上传 PDF 文件。');
+            return;
+        }
+
+        splitBtn.disabled = true;
+        splitBtn.textContent = '正在切割... 请稍候';
+
+        try {
+            const newPdfDoc = await PDFDocument.create();
+            const totalPages = originalPdfDoc.getPageCount();
+            const mode = splitModeEl.value;
+
+            for (let i = 0; i < totalPages; i++) {
+                const currentPage = originalPdfDoc.getPage(i);
+                
+                // 1. 获取当前页面的尺寸 (如果有效，否则使用假定尺寸)
+                let currentW = currentPage.getWidth();
+                let currentH = currentPage.getHeight();
+
+                if (!currentW || !currentH || currentW <= 0 || currentH <= 0 || isNaN(currentW) || isNaN(currentH)) {
+                    currentW = ASSUMED_A3_WIDTH;
+                    currentH = ASSUMED_A3_HEIGHT;
+                }
+
+                // 2. 嵌入当前页面
+                const embeddedPage = await newPdfDoc.embedPage(currentPage);
+                
+                // 3. 计算自定义边界和切割位置
+                const cropLeft = customBoundaries.left * currentW;
+                const cropRight = customBoundaries.right * currentW;
+                const cropTop = customBoundaries.top * currentH;
+                const cropBottom = customBoundaries.bottom * currentH;
+                const cropWidth = cropRight - cropLeft;
+                const cropHeight = cropBottom - cropTop;
+                
+                // 3. 切割逻辑
+                if (mode === 'vertical') {
+                    const splitX = cropLeft + cropWidth * customSplitPosition;
+                    const leftWidth = splitX - cropLeft;
+                    const rightWidth = cropRight - splitX;
+                    
+                    // 创建两个A4页面 (595.28 x 841.89 pts)
+                    const page1 = newPdfDoc.addPage([595.28, 841.89]); 
+                    const page2 = newPdfDoc.addPage([595.28, 841.89]); 
+
+                    // A4-1 (左半部分) - 先裁剪，再铺满A4页面
+                    // 计算缩放比例，使内容铺满A4页面
+                    const leftScale = Math.min(595.28 / leftWidth, 841.89 / cropHeight);
+                    const leftScaledWidth = leftWidth * leftScale;
+                    const leftScaledHeight = cropHeight * leftScale;
+                    
+                    // 计算居中偏移
+                    const leftOffsetX = (595.28 - leftScaledWidth) / 2;
+                    const leftOffsetY = (841.89 - leftScaledHeight) / 2;
+                    
+                    // 绘制完整页面，然后裁剪
+                    page1.drawPage(embeddedPage, { 
+                        x: leftOffsetX - cropLeft * leftScale, 
+                        y: leftOffsetY - cropTop * leftScale, 
+                        width: currentW * leftScale, 
+                        height: currentH * leftScale
+                    });
+                    
+                    // 精确裁剪到左半部分
+                    page1.setCropBox(leftOffsetX, leftOffsetY, leftScaledWidth, leftScaledHeight);
+
+                    // A4-2 (右半部分) - 先裁剪，再铺满A4页面
+                    // 计算缩放比例，使内容铺满A4页面
+                    const rightScale = Math.min(595.28 / rightWidth, 841.89 / cropHeight);
+                    const rightScaledWidth = rightWidth * rightScale;
+                    const rightScaledHeight = cropHeight * rightScale;
+                    
+                    // 计算居中偏移
+                    const rightOffsetX = (595.28 - rightScaledWidth) / 2;
+                    const rightOffsetY = (841.89 - rightScaledHeight) / 2;
+                    
+                    // 绘制完整页面，然后裁剪
+                    page2.drawPage(embeddedPage, { 
+                        x: rightOffsetX - splitX * rightScale, 
+                        y: rightOffsetY - cropTop * rightScale, 
+                        width: currentW * rightScale, 
+                        height: currentH * rightScale
+                    });
+                    
+                    // 精确裁剪到右半部分
+                    page2.setCropBox(rightOffsetX, rightOffsetY, rightScaledWidth, rightScaledHeight);
+                    
+                } else if (mode === 'horizontal') {
+                    const splitY = cropTop + cropHeight * customSplitPosition;
+                    const topHeight = splitY - cropTop;
+                    const bottomHeight = cropBottom - splitY;
+                    
+                    // 创建两个A4页面 (595.28 x 841.89 pts)
+                    const page1 = newPdfDoc.addPage([595.28, 841.89]);
+                    const page2 = newPdfDoc.addPage([595.28, 841.89]);
+
+                    // A4-1 (上半部分) - 先裁剪，再铺满A4页面
+                    // 计算缩放比例，使内容铺满A4页面
+                    const topScale = Math.min(595.28 / cropWidth, 841.89 / topHeight);
+                    const topScaledWidth = cropWidth * topScale;
+                    const topScaledHeight = topHeight * topScale;
+                    
+                    // 计算居中偏移
+                    const topOffsetX = (595.28 - topScaledWidth) / 2;
+                    const topOffsetY = (841.89 - topScaledHeight) / 2;
+                    
+                    // 绘制完整页面，然后裁剪
+                    page1.drawPage(embeddedPage, { 
+                        x: topOffsetX - cropLeft * topScale, 
+                        y: topOffsetY - cropTop * topScale, 
+                        width: currentW * topScale, 
+                        height: currentH * topScale
+                    });
+                    
+                    // 精确裁剪到上半部分
+                    page1.setCropBox(topOffsetX, topOffsetY, topScaledWidth, topScaledHeight);
+
+                    // A4-2 (下半部分) - 先裁剪，再铺满A4页面
+                    // 计算缩放比例，使内容铺满A4页面
+                    const bottomScale = Math.min(595.28 / cropWidth, 841.89 / bottomHeight);
+                    const bottomScaledWidth = cropWidth * bottomScale;
+                    const bottomScaledHeight = bottomHeight * bottomScale;
+                    
+                    // 计算居中偏移
+                    const bottomOffsetX = (595.28 - bottomScaledWidth) / 2;
+                    const bottomOffsetY = (841.89 - bottomScaledHeight) / 2;
+                    
+                    // 绘制完整页面，然后裁剪
+                    page2.drawPage(embeddedPage, { 
+                        x: bottomOffsetX - cropLeft * bottomScale, 
+                        y: bottomOffsetY - splitY * bottomScale, 
+                        width: currentW * bottomScale, 
+                        height: currentH * bottomScale
+                    });
+                    
+                    // 精确裁剪到下半部分
+                    page2.setCropBox(bottomOffsetX, bottomOffsetY, bottomScaledWidth, bottomScaledHeight);
+                }
+                
+                splitBtn.textContent = `正在切割... (已完成 ${i + 1}/${totalPages} 页)`;
+            }
+
+            // 4. 序列化新的 PDF
+            splitPdfBytes = await newPdfDoc.save();
+            downloadBtn.style.display = 'block';
+            splitBtn.textContent = '切割完成！';
+
+        } catch (error) {
+            alert('PDF 切割失败: ' + error.message);
+            console.error(error);
+            splitBtn.textContent = '步骤 3: 切割并生成 A4 PDF';
+        } finally {
+            if (splitBtn.textContent !== '切割完成！') {
+                 splitBtn.disabled = false;
+            }
+        }
+    }
+
+    // 下载文件
+    downloadBtn.addEventListener('click', () => {
+        if (splitPdfBytes) {
+            // 【修改】构建新的文件名
+            let baseName = originalFileName.replace(/\.pdf$/i, '');
+            const newFileName = `${baseName}_split.pdf`;
+
+            const blob = new Blob([splitPdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = newFileName; // 使用新文件名
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    });
+    
+    // 检测移动设备
+    function isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+               window.innerWidth <= 768;
+    }
+    
+    // 页面加载完成后默认绘制一个占位示意图
+    window.onload = () => {
+        // 初始化拖拽处理器
+        setupDragHandlers();
+        
+        // 重置自定义边界为默认值
+        customBoundaries = { top: 0, bottom: 1, left: 0, right: 1 };
+        customSplitPosition = 0.5;
+        
+        // 检测移动设备并显示相应提示
+        if (isMobileDevice()) {
+            const mobileHint = document.querySelector('.mobile-hint');
+            if (mobileHint) {
+                mobileHint.style.display = 'block';
+            }
+        }
+        
+        drawVisualization(ASSUMED_A3_WIDTH, ASSUMED_A3_HEIGHT, 'vertical'); 
+        previewCanvas.width = 842;
+        previewCanvas.height = 595;
+        previewWrapper.style.paddingTop = '70.6%'; // 595.28 / 841.89 * 100
+    };
+
+</script>
+</body>
+</html>

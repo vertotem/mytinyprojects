@@ -1,0 +1,282 @@
+/* Pixyll Web Theme
+ * Converted from Typora Pixyll theme for general web use
+ * A simple, beautiful theme that emphasizes content
+ * Original: https://github.com/johnotander/pixyll
+ */
+
+/* Font Imports */
+@import url(https://fonts.googleapis.com/css?family=Merriweather:900,900italic,300,300italic&subset=latin-ext);
+@import url(https://fonts.googleapis.com/css?family=Lato:900,300&subset=latin-ext);
+
+:root {
+  --font-serif: "Merriweather", "PT Serif", Georgia, "Times New Roman", "STSong", Serif;
+  --font-sans: "Lato", 'Helvetica Neue', Helvetica, sans-serif;
+  --font-code: Menlo, Monaco, "Courier New", monospace;
+  --text-color: #333;
+  --link-color: #463F5C;
+  --code-color: #7a7a7a;
+  --border-color: #333;
+  
+  /* Docute变量覆盖 */
+  --page-background: #ffffff;
+  --main-background: #ffffff;
+  --header-background: #ffffff;
+  --sidebar-background: #ffffff;
+}
+
+/* 统一容器宽度与默认主题一致 */
+.Wrap {
+  max-width: 1180px !important;
+}
+
+.Content,
+.layout-wide .Content,
+.Content[data-v-2f23fdf8],
+.layout-wide .Content[data-v-2f23fdf8] {
+  max-width: 770px !important;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-serif);
+  line-height: 1.5rem;
+  font-weight: 300;
+  font-size: 1.5rem;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  color: var(--text-color);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  font-weight: bold;
+  line-height: 1.2;
+  margin: 1em 0 0.5em;
+}
+
+h1 {
+  font-size: 2rem;
+  line-height: 2.5rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+  line-height: 1.5rem;
+}
+
+h4 {
+  font-size: 1.13rem;
+}
+
+h5, h6 {
+  font-size: 1rem;
+}
+
+p {
+  font-weight: 300;
+  line-height: 1.5;
+  margin: 0.5rem 0;
+}
+
+/* Links */
+a {
+  color: var(--link-color);
+  text-decoration: underline;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+/* Lists */
+ul, ol {
+  margin: 0 0 1.5em 1.5em;
+  padding: 0;
+}
+
+li {
+  margin: 0.5rem 0;
+}
+
+/* Blockquote */
+blockquote {
+  padding: 1.33em;
+  font-style: italic;
+  border-left: 5px solid var(--code-color);
+  color: #555;
+  margin: 1.5em 0;
+}
+
+blockquote em {
+  color: #000;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  font-size: 1.125rem;
+  border-collapse: collapse;
+  margin-bottom: 1.5em;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td,
+table > tfoot > tr > th,
+table > tfoot > tr > td {
+  padding: 12px;
+  line-height: 1.2;
+  vertical-align: top;
+  border-top: 1px solid var(--border-color);
+}
+
+table > thead > tr > th {
+  vertical-align: bottom;
+  border-bottom: 2px solid var(--border-color);
+}
+
+table > caption + thead > tr:first-child > th,
+table > caption + thead > tr:first-child > td,
+table > colgroup + thead > tr:first-child > th,
+table > colgroup + thead > tr:first-child > td,
+table > thead:first-child > tr:first-child > th,
+table > thead:first-child > tr:first-child > td {
+  border-top: 0;
+}
+
+table > tbody + tbody {
+  border-top: 2px solid var(--border-color);
+}
+
+/* Horizontal Rule */
+hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 2em 0;
+}
+
+/* Code */
+pre, code {
+  font-family: var(--font-code);
+}
+
+code {
+  color: var(--code-color);
+  background-color: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+pre {
+  padding: 1.125em;
+  margin-bottom: 0.88em;
+  font-size: 1rem;
+  border: 1px solid var(--code-color);
+  padding-bottom: 0.5rem;
+  padding-top: 0.5rem;
+  background-color: #f5f5f5;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+/* Images */
+img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1em 0;
+}
+
+/* Responsive Design */
+@media only screen and (min-width: 1400px) {
+  body {
+    max-width: 1100px;
+  }
+}
+
+@media only screen and (min-width: 1700px) {
+  body {
+    max-width: 1200px;
+  }
+}
+
+@media screen and (min-width: 48em) {
+  h1 {
+    font-size: 3.250rem;
+  }
+  h2 {
+    font-size: 2.298rem;
+  }
+  h3 {
+    font-size: 1.625rem;
+  }
+  h4 {
+    font-size: 1.3rem;
+  }
+  p, li {
+    font-size: 1.25rem;
+    line-height: 1.8;
+  }
+  table {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 48em) {
+  blockquote {
+    margin-left: 1rem;
+    margin-right: 0;
+    padding: 0.5em;
+  }
+  h1 {
+    font-size: 2.827rem;
+  }
+  h2 {
+    font-size: 1.999rem;
+  }
+  h3 {
+    font-size: 1.413rem;
+  }
+  h4 {
+    font-size: 1.3rem;
+  }
+}
+
+@media screen and (min-width: 64em) {
+  h1 {
+    font-size: 4.498rem;
+  }
+  h2 {
+    font-size: 2.29rem;
+  }
+  h3 {
+    font-size: 1.9rem;
+  }
+  h4 {
+    font-size: 1.591rem;
+  }
+}
+
