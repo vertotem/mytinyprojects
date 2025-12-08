@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>六爻神算</title>
+  <script src="./assets/tailwindcss.js"></script>
+  <script src="./assets/marked.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'divine-dark': '#1a1818',
+            'divine-gold': '#d4af37',
+            'divine-paper': '#f4ebd0',
+            'divine-ink': '#2c2c2c',
+          },
+          fontFamily: {
+            serif: ['"Noto Serif SC"', 'serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+    body {
+      font-family: 'Noto Serif SC', serif;
+      background-color: #1a1818;
+      color: #f4ebd0;
+      margin: 0;
+      overflow-y: auto;
+    }
+    .animate-spin-slow { animation: spin 6s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-divine-dark text-divine-paper selection:bg-divine-gold selection:text-divine-dark">
+  <div class="min-h-screen flex flex-col items-center">
+    <header class="w-full p-4 md:p-6 flex justify-between items-center border-b border-divine-gold/20">
+      <div class="flex items-center gap-2 md:gap-3 cursor-pointer" id="reset-btn">
+        <div class="w-6 h-6 md:w-8 md:h-8 rounded-full border-2 border-divine-gold flex items-center justify-center">
+          <div class="w-3 h-3 md:w-4 md:h-4 bg-divine-gold rounded-full"></div>
+        </div>
+        <h1 class="text-xl md:text-2xl text-divine-gold tracking-widest font-bold">六爻神算</h1>
+      </div>
+      <button class="text-xs md:text-sm text-gray-400 hover:text-divine-gold transition-colors" id="reset-btn-secondary">重新起卦</button>
+    </header>
+
+    <main class="flex-1 w-full max-w-6xl p-4 flex flex-col items-center justify-start md:justify-center">
+      <!-- 输入问题 -->
+      <section id="section-input" class="w-full max-w-lg flex flex-col items-center mt-8 md:mt-0">
+        <i class="fas fa-yin-yang text-6xl text-divine-gold/50 mb-8 animate-spin-slow"></i>
+        <h2 class="text-2xl md:text-3xl mb-2 text-divine-gold font-bold">心中所求何事？</h2>
+        <p class="text-gray-400 mb-8 text-sm">凡占卜者，必诚心诚意，一事一测。</p>
+
+        <input
+          id="question-input"
+          type="text"
+          placeholder="例如：近期事业运势如何？"
+          class="w-full p-4 bg-divine-ink/50 border border-divine-gold/30 rounded-lg text-lg text-divine-paper placeholder-gray-600 focus:outline-none focus:border-divine-gold mb-8 text-center shadow-inner"
+        />
+
+        <button
+          id="start-btn"
+          class="px-12 py-3 rounded-full text-lg font-bold tracking-widest transition-all duration-300 shadow-lg bg-divine-gold text-divine-dark hover:bg-white hover:scale-105"
+        >
+          开始起卦
+        </button>
+      </section>
+
+      <!-- 模式选择 -->
+      <section id="section-selection" class="hidden flex flex-col items-center w-full max-w-3xl mt-4 md:mt-0">
+        <h3 class="text-xl text-gray-400 mb-8">所测之事：<span class="text-divine-gold" id="question-preview"></span></h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 w-full">
+          <button
+            id="auto-btn"
+            class="group relative h-48 md:h-64 bg-divine-ink/40 border border-divine-gold/30 rounded-xl p-6 md:p-8 hover:bg-divine-ink/70 hover:border-divine-gold transition-all duration-500 flex flex-col items-center justify-center text-center overflow-hidden"
+          >
+            <div class="absolute inset-0 bg-gradient-to-br from-divine-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <i class="fas fa-bolt text-3xl md:text-4xl text-divine-gold mb-3 md:mb-4 group-hover:scale-110 transition-transform"></i>
+            <h2 class="text-xl md:text-2xl font-bold mb-2">心诚则灵</h2>
+            <p class="text-gray-400 text-xs md:text-sm">电脑自动起卦，即刻获取结果。</p>
+          </button>
+
+          <button
+            id="simulate-btn"
+            class="group relative h-48 md:h-64 bg-divine-ink/40 border border-divine-gold/30 rounded-xl p-6 md:p-8 hover:bg-divine-ink/70 hover:border-divine-gold transition-all duration-500 flex flex-col items-center justify-center text-center overflow-hidden"
+          >
+            <div class="absolute inset-0 bg-gradient-to-br from-divine-gold/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <i class="fas fa-hand-sparkles text-3xl md:text-4xl text-divine-gold mb-3 md:mb-4 group-hover:scale-110 transition-transform"></i>
+            <h2 class="text-xl md:text-2xl font-bold mb-2">亲自摇卦</h2>
+            <p class="text-gray-400 text-xs md:text-sm">凝神静气，手摇六次，感应天地。</p>
+          </button>
+        </div>
+      </section>
+
+      <!-- 模拟摇卦 -->
+      <section id="section-simulated" class="hidden w-full max-w-2xl flex flex-col items-center mt-2 md:mt-0">
+        <div class="text-lg text-gray-400 mb-2">所测之事：<span class="text-divine-gold" id="question-preview-sim"></span></div>
+        <div class="mb-4 md:mb-6 flex items-center gap-4">
+          <div class="text-divine-gold text-base md:text-lg" id="shake-indicator">第 1 爻 (共6爻)</div>
+          <div class="flex gap-2" id="dots"></div>
+        </div>
+
+        <div class="w-full bg-divine-ink/30 border border-divine-gold/20 rounded-xl mb-4 overflow-hidden">
+          <button id="log-toggle" class="w-full flex items-center justify-between px-4 py-3 text-divine-gold/80 hover:text-divine-gold transition-colors">
+            <span class="text-sm font-bold tracking-wide">实时摇卦记录（上爻在上）</span>
+            <i class="fas fa-chevron-down transition-transform duration-300" id="log-toggle-icon"></i>
+          </button>
+          <div id="log-panel" class="max-h-0 overflow-hidden transition-all duration-400 ease-in-out">
+            <div class="p-4 border-t border-divine-gold/10">
+              <div id="lines-list" class="min-h-[80px]"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="three-container" class="w-full h-64 md:h-[400px] lg:h-[500px] rounded-xl overflow-hidden shadow-2xl border border-divine-gold/30 bg-divine-ink/50 relative mb-6"></div>
+
+        <button
+          id="shake-btn"
+          class="mt-6 md:mt-10 px-10 md:px-16 py-3 md:py-4 rounded-full text-lg md:text-xl font-bold tracking-widest transition-all duration-300 shadow-xl bg-divine-gold text-divine-dark hover:bg-white hover:scale-105 hover:shadow-divine-gold/50"
+        >
+          摇 卦
+        </button>
+      </section>
+
+      <!-- 结果展示 -->
+      <section id="section-result" class="hidden w-full flex flex-col items-center pb-20">
+        <div class="text-center mb-6">
+          <h2 class="text-2xl md:text-4xl text-divine-gold font-bold mb-2">卦象已成</h2>
+          <p class="text-gray-400">所测：<span id="result-question"></span></p>
+        </div>
+
+        <div class="w-full max-w-6xl flex justify-end px-4 mb-2">
+          <button
+            id="toggle-translation"
+            class="flex items-center gap-2 px-4 py-2 border border-divine-gold/30 rounded-full hover:bg-divine-gold hover:text-divine-dark transition-colors bg-divine-ink/30 text-sm text-divine-gold"
+          >
+            切换白话解释
+          </button>
+        </div>
+
+        <div id="interpretation-guide" class="w-full"></div>
+
+        <div id="hexagram-cards" class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6"></div>
+
+        <div class="w-full max-w-4xl mt-12 bg-divine-ink/20 p-4 md:p-8 rounded-xl border border-divine-gold/10">
+          <div class="flex flex-col items-center">
+            <h3 class="text-xl md:text-2xl text-divine-paper mb-4 flex items-center gap-3 font-bold">
+              <i class="fas fa-brain text-purple-400"></i>
+              AI 大师解盘
+            </h3>
+            <button
+              id="ai-btn"
+              class="px-8 md:px-10 py-3 bg-purple-900/40 border border-purple-500/50 hover:bg-purple-800/50 text-purple-200 rounded-full transition-all tracking-widest shadow-lg hover:shadow-purple-900/20"
+            >
+              点击请求解卦
+            </button>
+            <div id="result-ai-text" class="mt-4 text-gray-300 text-sm text-left w-full whitespace-pre-line leading-relaxed"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
