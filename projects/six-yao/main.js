@@ -16,7 +16,7 @@ const state = {
 
 let guaData = null;
 let threeCtx = null;
-const AI_DEFAULT_ENDPOINT = 'http://1.94.209.52:5432/six-yao/api.php'; // 预置后端地址，可按需修改
+const AI_DEFAULT_ENDPOINT = 'https://api.987408.xyz/six-yao/api.php'; // 预置后端地址，可按需修改
 
 async function loadGuaData() {
   if (guaData) return guaData;
@@ -753,4 +753,5 @@ window.addEventListener('DOMContentLoaded', () => {
   bindEvents();
   resetApp();
 });
+
 
