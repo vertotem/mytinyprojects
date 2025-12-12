@@ -19,6 +19,7 @@
     <div>
         <h2>操作</h2>
         <button onclick="generateRandom()" id="generateBtn" disabled>随机生成</button>
+        <div id="loadingStatus" style="margin-top: 10px; color: #666;">正在加载数据...</div>
     </div>
     
     <div id="result" style="display:none;">
@@ -134,8 +135,17 @@
 
         // 随机生成
         function generateRandom() {
-            if (!selectedCipai || !cipaiMap[selectedCipai]) {
+            if (!selectedCipai) {
                 alert('请先选择词牌');
+                return;
+            }
+
+            console.log('选中的词牌：', selectedCipai);
+            console.log('cipaiMap中是否有该词牌：', selectedCipai in cipaiMap);
+            console.log('cipaiMap中的词牌列表：', Object.keys(cipaiMap).slice(0, 10));
+
+            if (!cipaiMap[selectedCipai]) {
+                alert('该词牌下没有数据。\n选中的词牌：' + selectedCipai + '\n请等待数据加载完成或选择其他词牌');
                 return;
             }
 
@@ -186,7 +196,16 @@
         // 初始化
         async function init() {
             renderCipaiList(); // 直接使用写死的词牌列表
-            await loadPoemsData();
+            try {
+                await loadPoemsData();
+                console.log('数据加载完成，词牌数量：', Object.keys(cipaiMap).length);
+                document.getElementById('loadingStatus').textContent = '数据加载完成';
+                document.getElementById('loadingStatus').style.color = '#0a0';
+            } catch (error) {
+                console.error('数据加载失败：', error);
+                document.getElementById('loadingStatus').textContent = '数据加载失败：' + error.message;
+                document.getElementById('loadingStatus').style.color = '#a00';
+            }
         }
 
         init();
