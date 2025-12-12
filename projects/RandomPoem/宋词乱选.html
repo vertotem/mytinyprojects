@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宋词乱选</title>
+</head>
+<body>
+    <h1>宋词乱选</h1>
+    
+    <div>
+        <h2>选择词牌</h2>
+        <button onclick="toggleCipaiList()">展开/折叠词牌列表</button>
+        <div id="cipaiList" style="display:none;">
+            <div id="cipaiItems"></div>
+        </div>
+    </div>
+    
+    <div>
+        <h2>操作</h2>
+        <button onclick="generateRandom()" id="generateBtn" disabled>随机生成</button>
+    </div>
+    
+    <div id="result" style="display:none;">
+        <h2>生成结果</h2>
+        <div id="resultCipai"></div>
+        <div id="resultContent" style="white-space: pre-line;"></div>
+    </div>
+
+    <script>
+        let cipaiList = [];
+        let poemsData = [];
+        let selectedCipai = null;
+        // 按词牌名分组，每项为 { poem, sentences }
+        let cipaiMap = {};
+
+        // 加载CSV获取词牌列表
+        async function loadCipaiList() {
+            const response = await fetch('全宋词_统计.csv');
+            const text = await response.text();
+            const lines = text.split('\n');
+            cipaiList = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    const parts = line.split(',');
+                    if (parts.length >= 1 && parts[0]) {
+                        cipaiList.push(parts[0]);
+                    }
+                }
+            }
+            renderCipaiList();
+        }
+
+        // 加载JSON数据
+        async function loadPoemsData() {
+            const response = await fetch('data/全宋词.json');
+            poemsData = await response.json();
+            
+            // 按词牌分组，并预先拆分句子
+            cipaiMap = {};
+            poemsData.forEach(poem => {
+                const cipai = poem.cipai || '';
+                if (cipai) {
+                    if (!cipaiMap[cipai]) {
+                        cipaiMap[cipai] = [];
+                    }
+                    cipaiMap[cipai].push({
+                        poem,
+                        sentences: splitSentences(poem.content || '')
+                    });
+                }
+            });
+        }
+
+        // 渲染词牌列表
+        function renderCipaiList() {
+            const container = document.getElementById('cipaiItems');
+            container.innerHTML = '';
+            cipaiList.forEach(cipai => {
+                const div = document.createElement('div');
+                div.textContent = cipai;
+                div.style.cursor = 'pointer';
+                div.style.padding = '5px';
+                div.style.border = '1px solid #ccc';
+                div.style.margin = '2px';
+                div.onclick = () => selectCipai(cipai);
+                if (selectedCipai === cipai) {
+                    div.style.backgroundColor = '#e0e0e0';
+                }
+                container.appendChild(div);
+            });
+        }
+
+        // 选择词牌
+        function selectCipai(cipai) {
+            selectedCipai = cipai;
+            renderCipaiList();
+            document.getElementById('generateBtn').disabled = false;
+        }
+
+        // 切换词牌列表显示
+        function toggleCipaiList() {
+            const list = document.getElementById('cipaiList');
+            list.style.display = list.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // 按标点分句（句号、逗号等都算一句，保留末尾标点）
+        function splitSentences(text) {
+            const matches = text.match(/[^，。、；：！？]+[，。、；：！？]?/g);
+            return matches ? matches.map(s => s.trim()).filter(Boolean) : [];
+        }
+
+        // 将文字填充到模板的标点结构中
+        function fillTemplateWithWords(template, words) {
+            if (!words || words.length === 0) {
+                return template;
+            }
+            
+            let result = '';
+            let wordIndex = 0;
+            
+            // 遍历模板的每个字符
+            for (let i = 0; i < template.length; i++) {
+                const char = template[i];
+                // 如果是标点符号或空格，直接保留
+                if (/[，。、；：！？\s]/.test(char)) {
+                    result += char;
+                } else if (/[\u4e00-\u9fa5]/.test(char)) {
+                    // 如果是汉字位置，填充随机文字（循环使用）
+                    result += words[wordIndex % words.length];
+                    wordIndex++;
+                } else {
+                    // 其他字符（如标点符号的其他形式）也保留
+                    result += char;
+                }
+            }
+            
+            return result;
+        }
+
+        // 随机生成
+        function generateRandom() {
+            if (!selectedCipai || !cipaiMap[selectedCipai]) {
+                alert('请先选择词牌');
+                return;
+            }
+
+            const entries = cipaiMap[selectedCipai];
+            if (entries.length === 0) {
+                alert('该词牌下没有数据');
+                return;
+            }
+
+            // 随机选择一首作为模板
+            const templateEntry = entries[Math.floor(Math.random() * entries.length)];
+            const templateSentences = templateEntry.sentences;
+
+            // 生成新词
+            const newSentences = [];
+            for (let i = 0; i < templateSentences.length; i++) {
+                const templateSentence = templateSentences[i];
+                
+                // 选择拥有第 i 句的词作为来源
+                const candidates = entries.filter(e => e.sentences.length > i);
+                if (candidates.length === 0) {
+                    newSentences.push(templateSentence);
+                    continue;
+                }
+
+                const source = candidates[Math.floor(Math.random() * candidates.length)];
+                const selectedSentence = source.sentences[i];
+
+                // 提取选中句子的所有汉字（去掉标点和空格）
+                const words = selectedSentence.match(/[\u4e00-\u9fa5]/g) || [];
+
+                // 将文字填充到模板的标点结构中
+                const newSentence = fillTemplateWithWords(templateSentence, words.join(''));
+                newSentences.push(newSentence);
+            }
+
+            // 组合最终结果，并在句号/问号/感叹号后换行（含全角半角）
+            const resultContent = newSentences
+                .join(' ')
+                .replace(/([。！？?!])/g, '$1\n');
+
+            // 显示结果
+            document.getElementById('resultCipai').textContent = '词牌：' + selectedCipai;
+            document.getElementById('resultContent').textContent = resultContent;
+            document.getElementById('result').style.display = 'block';
+        }
+
+        // 初始化
+        async function init() {
+            await Promise.all([loadCipaiList(), loadPoemsData()]);
+        }
+
+        init();
+    </script>
+</body>
+</html>
+

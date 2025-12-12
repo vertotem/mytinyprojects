@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>乐府乱选</title>
+</head>
+<body>
+    <h1>乐府乱选</h1>
+
+    <div>
+        <h2>选择字数</h2>
+        <button class="count-btn" onclick="selectCount(3)" id="btn3">三字</button>
+        <button class="count-btn" onclick="selectCount(4)" id="btn4">四字</button>
+        <button class="count-btn" onclick="selectCount(5)" id="btn5">五字</button>
+        <button class="count-btn" onclick="selectCount(6)" id="btn6">六字</button>
+        <button class="count-btn" onclick="selectCount(7)" id="btn7">七字</button>
+    </div>
+
+    <div>
+        <h2>操作</h2>
+        <button onclick="generateRandom()" id="generateBtn" disabled>随机生成</button>
+    </div>
+
+    <div id="result" style="display:none;">
+        <h2>生成结果</h2>
+        <div id="resultCount"></div>
+        <div id="resultContent" style="white-space: pre-line;"></div>
+    </div>
+
+    <script>
+        let poemsData = [];
+        let countMap = {}; // 按字数分组
+        let selectedCount = null;
+
+        // 按标点分句，保留末尾标点
+        function splitSentencesWithPunctuation(text) {
+            const sentences = [];
+            const pattern = /([\u4e00-\u9fa5]+)([，。、；：！？])?/g;
+            let match;
+
+            while ((match = pattern.exec(text)) !== null) {
+                const sentenceText = match[1];
+                const punctuation = match[2] || '';
+                if (sentenceText) {
+                    sentences.push({ text: sentenceText, punctuation });
+                }
+            }
+
+            if (sentences.length === 0) {
+                const parts = text.split(/[，。,\.！？!？；;：:\s]+/);
+                const punctuation = text.match(/[，。、；：！？]/g) || [];
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i].trim();
+                    if (part) {
+                        sentences.push({
+                            text: part,
+                            punctuation: i < punctuation.length ? punctuation[i] : (i === parts.length - 1 ? '。' : '，')
+                        });
+                    }
+                }
+            }
+
+            return sentences;
+        }
+
+        // 仅提取文字句子（用于抽取）
+        function splitSentences(text) {
+            return text.split(/[，。,\.！？!？；;：:\s]+/).map(s => s.trim()).filter(Boolean);
+        }
+
+        // 将文字填充到模板的标点结构中
+        function fillTemplateWithWords(template, words) {
+            if (!words || words.length === 0) {
+                return template;
+            }
+            let result = '';
+            let wordIndex = 0;
+            for (let i = 0; i < template.length; i++) {
+                const char = template[i];
+                if (/[，。、；：！？\s]/.test(char)) {
+                    result += char;
+                } else if (/[\u4e00-\u9fa5]/.test(char)) {
+                    result += words[wordIndex % words.length];
+                    wordIndex++;
+                } else {
+                    result += char;
+                }
+            }
+            return result;
+        }
+
+        async function loadPoemsData() {
+            const response = await fetch('data/乐府诗集.json');
+            poemsData = await response.json();
+            countMap = {3: [], 4: [], 5: [], 6: [], 7: []};
+            poemsData.forEach(poem => {
+                const count = poem["字數"];
+                const content = poem["詩文"] || '';
+                if (countMap[count]) {
+                    countMap[count].push({
+                        poem,
+                        sentences: splitSentences(content),
+                        sentencesWithPunc: splitSentencesWithPunctuation(content)
+                    });
+                }
+            });
+        }
+
+        function selectCount(count) {
+            selectedCount = count;
+            ['btn3','btn4','btn5','btn6','btn7'].forEach(id => {
+                document.getElementById(id).classList.remove('selected');
+            });
+            document.getElementById('btn' + count).classList.add('selected');
+            document.getElementById('generateBtn').disabled = false;
+        }
+
+        function generateRandom() {
+            if (!selectedCount || !countMap[selectedCount] || countMap[selectedCount].length === 0) {
+                alert('请先选择有数据的字数');
+                return;
+            }
+
+            const entries = countMap[selectedCount];
+            // 随机选择模板
+            const templateEntry = entries[Math.floor(Math.random() * entries.length)];
+            const templateSentences = templateEntry.sentencesWithPunc;
+
+            const newSentences = [];
+            for (let i = 0; i < templateSentences.length; i++) {
+                const templateSentence = templateSentences[i];
+                const candidates = entries.filter(e => e.sentences.length > i);
+                if (candidates.length === 0) {
+                    newSentences.push(templateSentence);
+                    continue;
+                }
+                const source = candidates[Math.floor(Math.random() * candidates.length)];
+                const selectedSentence = source.sentences[i];
+                const words = (selectedSentence.match(/[\u4e00-\u9fa5]/g) || []).join('');
+                const newSentence = fillTemplateWithWords(templateSentence.text, words);
+                newSentences.push({
+                    text: newSentence,
+                    punctuation: templateSentence.punctuation
+                });
+            }
+
+            let resultContent = '';
+            for (let i = 0; i < newSentences.length; i++) {
+                const punc = i < newSentences.length - 1 ? (newSentences[i].punctuation || '，') : '。';
+                resultContent += newSentences[i].text + punc;
+                if (/[。！？?!]/.test(punc)) {
+                    resultContent += '\n';
+                }
+            }
+
+            document.getElementById('resultCount').textContent = '字数：' + selectedCount + '字';
+            document.getElementById('resultContent').textContent = resultContent;
+            document.getElementById('result').style.display = 'block';
+        }
+
+        async function init() {
+            await loadPoemsData();
+        }
+
+        init();
+    </script>
+</body>
+</html>
+

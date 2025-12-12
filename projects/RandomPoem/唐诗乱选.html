@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>唐诗乱选</title>
+</head>
+<body>
+    <h1>唐诗乱选</h1>
+    
+    <div>
+        <h2>选择类型</h2>
+        <button class="poem-type-btn" onclick="selectType('五言绝句')" id="btn5">五言绝句</button>
+        <button class="poem-type-btn" onclick="selectType('七言绝句')" id="btn7">七言绝句</button>
+    </div>
+    
+    <div>
+        <h2>操作</h2>
+        <button onclick="generateRandom()" id="generateBtn" disabled>随机生成</button>
+    </div>
+    
+    <div id="result" style="display:none;">
+        <h2>生成结果</h2>
+        <div id="resultType"></div>
+        <div id="resultContent" style="white-space: pre-line;"></div>
+    </div>
+
+    <script>
+        let poemsData = [];
+        let selectedType = null;
+        let typeMap = {}; // 按类型分组的数据
+
+        // 按标点符号分割句子
+        const LINE_SPLIT_RE = /[，,。\.？！\?！；;：:\s]+/;
+
+        // 分类诗歌
+        function classifyPoem(content) {
+            const segments = content.split(LINE_SPLIT_RE)
+                .map(s => s.trim())
+                .filter(s => s);
+            
+            if (segments.length === 0) {
+                return "其它";
+            }
+
+            const lengths = new Set(segments.map(seg => seg.length));
+            if (lengths.size === 1 && lengths.has(5)) {
+                return "五言绝句";
+            }
+            if (lengths.size === 1 && lengths.has(7)) {
+                return "七言绝句";
+            }
+            return "其它";
+        }
+
+        // 加载JSON数据
+        async function loadPoemsData() {
+            const response = await fetch('data/唐诗三百首.json');
+            poemsData = await response.json();
+            
+            // 按类型分组
+            typeMap = {
+                "五言绝句": [],
+                "七言绝句": []
+            };
+            
+            poemsData.forEach(poem => {
+                const category = classifyPoem(poem.content || '');
+                if (category === "五言绝句" || category === "七言绝句") {
+                    typeMap[category].push(poem);
+                }
+            });
+        }
+
+        // 选择类型
+        function selectType(type) {
+            selectedType = type;
+            
+            // 更新按钮样式
+            document.getElementById('btn5').classList.remove('selected');
+            document.getElementById('btn7').classList.remove('selected');
+            if (type === '五言绝句') {
+                document.getElementById('btn5').classList.add('selected');
+            } else {
+                document.getElementById('btn7').classList.add('selected');
+            }
+            
+            // 启用生成按钮
+            document.getElementById('generateBtn').disabled = false;
+        }
+
+        // 按句分割，保留标点符号信息
+        function splitSentencesWithPunctuation(text) {
+            const sentences = [];
+            // 使用正则表达式匹配：文字+标点符号
+            const pattern = /([\u4e00-\u9fa5]+)([，。、；：！？])?/g;
+            let match;
+            
+            while ((match = pattern.exec(text)) !== null) {
+                const sentenceText = match[1];
+                const punctuation = match[2] || '';
+                if (sentenceText) {
+                    sentences.push({
+                        text: sentenceText,
+                        punctuation: punctuation
+                    });
+                }
+            }
+            
+            // 如果没有匹配到，尝试简单分割
+            if (sentences.length === 0) {
+                const parts = text.split(LINE_SPLIT_RE);
+                const punctuation = text.match(/[，。、；：！？]/g) || [];
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i].trim();
+                    if (part) {
+                        sentences.push({
+                            text: part,
+                            punctuation: i < punctuation.length ? punctuation[i] : (i === parts.length - 1 ? '。' : '，')
+                        });
+                    }
+                }
+            }
+            
+            return sentences;
+        }
+
+        // 按句分割（仅提取文字，用于抽取）
+        function splitSentences(text) {
+            return text.split(LINE_SPLIT_RE).filter(s => s.trim());
+        }
+
+        // 将文字填充到模板的标点结构中
+        function fillTemplateWithWords(template, words) {
+            if (!words || words.length === 0) {
+                return template;
+            }
+            
+            let result = '';
+            let wordIndex = 0;
+            
+            // 遍历模板的每个字符
+            for (let i = 0; i < template.length; i++) {
+                const char = template[i];
+                // 如果是标点符号或空格，直接保留
+                if (/[，。、；：！？\s]/.test(char)) {
+                    result += char;
+                } else if (/[\u4e00-\u9fa5]/.test(char)) {
+                    // 如果是汉字位置，填充随机文字（循环使用）
+                    result += words[wordIndex % words.length];
+                    wordIndex++;
+                } else {
+                    // 其他字符（如标点符号的其他形式）也保留
+                    result += char;
+                }
+            }
+            
+            return result;
+        }
+
+        // 随机生成
+        function generateRandom() {
+            if (!selectedType || !typeMap[selectedType] || typeMap[selectedType].length === 0) {
+                alert('请先选择类型');
+                return;
+            }
+
+            const poems = typeMap[selectedType];
+            if (poems.length === 0) {
+                alert('该类型下没有数据');
+                return;
+            }
+
+            // 随机选择一首作为模板
+            const templatePoem = poems[Math.floor(Math.random() * poems.length)];
+            const templateContent = templatePoem.content || '';
+            const templateSentences = splitSentencesWithPunctuation(templateContent);
+
+            // 生成新诗
+            const newSentences = [];
+            for (let i = 0; i < templateSentences.length; i++) {
+                const templateSentence = templateSentences[i];
+                
+                // 从同类型诗中随机抽取一首
+                const randomPoem = poems[Math.floor(Math.random() * poems.length)];
+                const randomSentences = splitSentences(randomPoem.content || '');
+                
+                if (randomSentences.length > 0) {
+                    // 选择一句（优先选择相同位置的，如果没有则随机选择）
+                    const selectedSentence = randomSentences[i % randomSentences.length];
+                    
+                    // 提取选中句子的所有汉字（去掉标点和空格）
+                    const words = selectedSentence.match(/[\u4e00-\u9fa5]/g) || [];
+                    
+                    // 将文字填充到模板的标点结构中
+                    const newSentence = fillTemplateWithWords(templateSentence.text, words.join(''));
+                    newSentences.push({
+                        text: newSentence,
+                        punctuation: templateSentence.punctuation
+                    });
+                } else {
+                    // 如果没有找到句子，使用模板句
+                    newSentences.push(templateSentence);
+                }
+            }
+
+            // 组合最终结果（用标点符号连接各句，保持原格式）
+            let resultContent = '';
+            for (let i = 0; i < newSentences.length; i++) {
+                resultContent += newSentences[i].text;
+                // 句末标点（保留模板标点，最后一句强制句号）
+                const punc = i < newSentences.length - 1
+                    ? (newSentences[i].punctuation || '，')
+                    : '。';
+                resultContent += punc;
+                // 句末问号/感叹号/句号后换行，便于展示（含全角半角）
+                if (/[。！？?!]/.test(punc)) {
+                    resultContent += '\n';
+                }
+            }
+
+            // 显示结果
+            document.getElementById('resultType').textContent = '类型：' + selectedType;
+            document.getElementById('resultContent').textContent = resultContent;
+            document.getElementById('result').style.display = 'block';
+        }
+
+        // 初始化
+        async function init() {
+            await loadPoemsData();
+        }
+
+        init();
+    </script>
+</body>
+</html>
+
