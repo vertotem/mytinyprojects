@@ -31,6 +31,7 @@
 - [**纯前端家教平台**：](./projects/jiajiao/) 一个纯前端家教平台，支持学生家长和家教老师的信息展示和查询。本质上思路和上面那个文件树差不多。
 - [**MDWiki主题改良**：](./projects/mdwiki/sakura.html) 改良了两个主题，前面展示的是Sakura，还有一个[报纸](./projects/mdwiki/newspater.html)主题的。
 - [**无Class的美观CSS**：](./projects/css-ref/demo.html) 一套从Typora主题转换来的无类CSS，可用于快速搭建美观网站。
+- [**古诗词乱选**：](./projects/RandomPoem/index.html) 写着玩的一个小网页，数据来源《乐府诗集》、《全唐诗》、《全宋词》，玩法就是点一下就会随机把一些古诗词片段组合在一起...
 
 ### 带后端的工具
 
