@@ -28,29 +28,22 @@
     </div>
 
     <script>
-        let cipaiList = [];
+        const cipaiList = [
+            "浣溪沙","水調歌頭","兵要望江南","菩薩蠻","鷓鴣天","滿江紅","西江月","臨江仙","失調名","念奴嬌",
+            "沁園春","蝶戀花","減字木蘭花","點絳唇","清平樂","賀新郎","滿庭芳","虞美人","十二時","水龍吟",
+            "好事近","漁家傲","朝中措","南鄉子","謁金門","卜算子","南歌子","玉樓春","踏莎行","生查子",
+            "望江南","浪淘沙","柳梢青","驀山溪","鵲橋仙","如夢令","訴衷情","木蘭花慢","洞仙歌","阮郎歸",
+            "楊柳枝","青玉案","江城子","醉落魄","摸魚兒","長相思","瑞鶴仙","小重山","感皇恩","木蘭花",
+            "喜遷鶯","八聲甘州","憶秦娥","醉蓬萊","定風波","霜天曉角","酹江月","導引","齊天樂","眼兒媚",
+            "更漏子","采桑子","少年遊","永遇樂","江神子","漢宮春","千秋歲","祝英臺近","聲聲慢","五更轉",
+            "風入松","漁父","酒泉子","一翦梅","行香子","瑞鷓鴣","醜奴兒","烏夜啼","漁父詞","風流子",
+            "桃源憶故人","南柯子","燭影搖紅","採桑子","武陵春","最高樓","鳳棲梧","夜行船","杏花天","一落索",
+            "醉桃源","天仙子","秦樓月","水鼓子","撥棹歌","望海潮","應天長","擣練子","憶王孫","畫堂春"
+        ];
         let poemsData = [];
         let selectedCipai = null;
         // 按词牌名分组，每项为 { poem, sentences }
         let cipaiMap = {};
-
-        // 加载CSV获取词牌列表
-        async function loadCipaiList() {
-            const response = await fetch('全宋词_统计.csv');
-            const text = await response.text();
-            const lines = text.split('\n');
-            cipaiList = [];
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (line) {
-                    const parts = line.split(',');
-                    if (parts.length >= 1 && parts[0]) {
-                        cipaiList.push(parts[0]);
-                    }
-                }
-            }
-            renderCipaiList();
-        }
 
         // 加载JSON数据
         async function loadPoemsData() {
@@ -192,7 +185,8 @@
 
         // 初始化
         async function init() {
-            await Promise.all([loadCipaiList(), loadPoemsData()]);
+            renderCipaiList(); // 直接使用写死的词牌列表
+            await loadPoemsData();
         }
 
         init();
