@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>极简坐标指令看板</title>
+  <!-- X轴=数字列，Y轴=字母行，坐标示例 1a = 列1 行a -->
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --header-bg: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; 
+    }
+
+    /* 顶部导航与设置 */
+    .top-nav {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 16px 24px;
+      background-color: var(--card-bg);
+      box-shadow: var(--shadow-sm);
+      z-index: 100;
+    }
+
+    .header-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    /* 可编辑的大标题 */
+    .nav-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+      outline: none;
+      border-bottom: 1px dashed transparent;
+      display: inline-block;
+      width: fit-content;
+      transition: border-color 0.2s;
+    }
+    .nav-title:hover, .nav-title:focus {
+      border-bottom-color: var(--primary);
+    }
+
+    /* 可编辑的备注框 */
+    .nav-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      outline: none;
+      border-bottom: 1px dashed transparent;
+      display: inline-block;
+      width: fit-content;
+      min-width: 150px;
+      transition: border-color 0.2s;
+    }
+    .nav-desc:hover, .nav-desc:focus {
+      border-bottom-color: var(--primary);
+    }
+    /* 为空的提示 */
+    .nav-desc:empty:before {
+      content: attr(data-placeholder);
+      color: #94a3b8;
+    }
+
+    .settings-container {
+      position: relative;
+      margin-top: 4px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg);
+      border-color: #cbd5e1;
+    }
+
+    .settings-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 8px;
+      background: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      width: 160px;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 200;
+    }
+
+    .settings-menu.active {
+      display: flex;
+    }
+
+    .settings-menu button {
+      background: none;
+      border: none;
+      padding: 12px 16px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-main);
+      transition: background 0.2s;
+    }
+
+    .settings-menu button:hover { background-color: var(--bg); }
+    .settings-menu hr { margin: 0; border: none; border-top: 1px solid var(--border); }
+    .settings-menu .btn-danger { color: var(--danger); }
+    .settings-menu .btn-danger:hover { background-color: #fef2f2; }
+
+    /* 看板矩阵容器 */
+    .board-container {
+      flex: 1; 
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; 
+    }
+
+    .board {
+      flex: 1; 
+      display: grid;
+      gap: 16px;
+      padding: 24px 24px 100px 24px;
+      overflow: auto; 
+    }
+
+    .cell-box {
+      border-radius: 8px;
+      min-height: 0; 
+    }
+
+    /* 表头 (XY轴) 不换行显示 */
+    .header-cell {
+      background-color: var(--header-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5);
+      white-space: nowrap; 
+    }
+    .header-cell:hover {
+      background-color: #cbd5e1;
+      transform: translateY(-1px);
+    }
+    .header-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* 内容承载单元格 */
+    .task-cell {
+      background-color: transparent;
+      border: 2px dashed #cbd5e1;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.2s, background-color 0.2s;
+      overflow-y: auto; 
+      overflow-x: hidden;
+      min-width: 0; 
+    }
+    .task-cell:hover {
+      border-color: #94a3b8;
+      background-color: rgba(255,255,255,0.3);
+    }
+
+    .task-cell::-webkit-scrollbar,
+    .board::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .task-cell::-webkit-scrollbar-track,
+    .board::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .task-cell::-webkit-scrollbar-thumb,
+    .board::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 10px;
+    }
+    .task-cell::-webkit-scrollbar-thumb:hover,
+    .board::-webkit-scrollbar-thumb:hover {
+      background-color: #94a3b8;
+    }
+
+    /* 任务卡片 */
+    .task-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px; /* 移除了原本为绝对定位ID留出的底部空间 */
+      position: relative;
+      box-shadow: var(--shadow-sm);
+      word-break: break-word;
+      white-space: pre-wrap;
+      font-size: 14px;
+      line-height: 1.5;
+      transition: transform 0.2s, box-shadow 0.2s;
+      flex-shrink: 0; 
+    }
+    .task-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
+    }
+
+    /* 嵌入在文本前方的 ID */
+    .task-id {
+      color: var(--primary);
+      font-weight: 600;
+      font-family: monospace;
+    }
+
+    /* 底部指令流 */
+    .cmd-bar-wrapper {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 20px;
+      background: linear-gradient(to top, var(--bg) 60%, transparent);
+      pointer-events: none;
+      display: flex;
+      justify-content: center;
+      z-index: 150;
+    }
+
+    .cmd-bar {
+      pointer-events: auto;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
+      border-radius: 12px;
+      padding: 8px 16px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      width: 100%;
+      max-width: 800px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .cmd-bar:focus-within {
+      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.2);
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+
+    .cmd-prefix {
+      font-weight: bold;
+      color: var(--primary);
+      font-size: 18px;
+    }
+
+    .cmd-input {
+      flex: 1;
+      font-size: 16px;
+      padding: 8px 0;
+      font-family: monospace;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text-main);
+    }
+    .cmd-input::placeholder { color: #94a3b8; }
+    
+    .cmd-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .empty-top-left {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-align: center;
+      background-color: var(--header-bg);
+      border-radius: 8px;
+      padding: 12px 16px;
+      white-space: nowrap;
+    }
+
+    .board.filter-active {
+      padding-bottom: 24px;
+    }
+    .board.filter-active .task-cell {
+      min-height: min(70vh, 520px);
+    }
+
+    .help-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(15, 23, 42, 0.45);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      pointer-events: auto;
+    }
+    .help-overlay.visible {
+      display: flex;
+    }
+    .help-panel {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      max-width: 420px;
+      width: 100%;
+      padding: 20px 22px;
+    }
+    .help-panel h3 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .help-panel pre {
+      margin: 0;
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--text-main);
+      white-space: pre-wrap;
+    }
+    .help-panel .help-foot {
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-nav">
+    <div class="header-info">
+      <div id="boardTitle" class="nav-title" contenteditable="true" spellcheck="false" onblur="updateHeaderInfo()"></div>
+      <div id="boardDesc" class="nav-desc" contenteditable="true" spellcheck="false" data-placeholder="点击添加看板备注..." onblur="updateHeaderInfo()"></div>
+    </div>
+    <div class="settings-container">
+      <button class="icon-btn" onclick="toggleSettings(event)">
+        ⚙️ 设置
+      </button>
+      <div class="settings-menu" id="settingsMenu">
+        <button onclick="addCol()">+ 增加列 (X轴·数字)</button>
+        <button onclick="addRow()">+ 增加行 (Y轴·字母)</button>
+        <hr>
+        <button onclick="exportData()">导出 JSON</button>
+        <button onclick="document.getElementById('importFile').click()">导入 JSON</button>
+        <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importData(event)">
+        <hr>
+        <button class="btn-danger" onclick="resetData()">重置数据</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="board-container">
+    <div class="board" id="board">
+      </div>
+  </div>
+
+  <div class="cmd-bar-wrapper">
+    <div class="cmd-bar">
+      <span class="cmd-prefix">❯</span>
+      <input type="text" id="cmdInput" class="cmd-input" placeholder="1a 任务 | d 001 | f a | s 关键字 | c | h" autocomplete="off">
+      <div class="cmd-hint">Enter 执行</div>
+    </div>
+  </div>
+
+  <div id="helpOverlay" class="help-overlay" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="help-panel" tabindex="-1" id="helpPanel">
+      <h3 id="helpTitle">指令说明</h3>
+      <pre id="helpBody">坐标：X=数字列，Y=字母行，如 1a 表示第 1 列、第 a 行。
+1a 内容        在 1a 录入任务；纯数字为移动已有任务
+d 001          删除任务
+f a            仅显示 Y 轴 a，铺满视图
+s 关键字       仅显示含关键字的任务所在 Y 行
+c              清除 f / s 过滤，恢复完整列表
+h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
+      <div class="help-foot">按 Enter 关闭</div>
+    </div>
+  </div>
+
+  <script>
+    // --- 默认数据结构 ---
+    const defaultState = {
+      boardTitle: "极简坐标指令看板 V3.2",
+      boardDesc: "X=数字列，Y=字母行；坐标如 1a",
+      layout: {
+        cols: [{ key: "1", label: "待办" }, { key: "2", label: "进行中" }, { key: "3", label: "已完成" }],
+        rows: [{ key: "a", label: "项目A" }, { key: "b", label: "项目B" }]
+      },
+      tasks: [
+        { id: "000", content: "完成首页UI设计\n- 包含响应式布局\n- 导出切图", pos: "1a" },
+        { id: "001", content: "修复登录接口Bug", pos: "2a" },
+        { id: "002", content: "撰写V3.2需求文档", pos: "3b" }
+      ]
+    };
+
+    let state = JSON.parse(JSON.stringify(defaultState));
+
+    /** @type {{ mode: 'none' } | { mode: 'single', rowKey: string } | { mode: 'search', keyword: string }} */
+    let viewFilter = { mode: 'none' };
+
+    const STORAGE_KEY = 'kanban_v3.2_data';
+
+    // --- 核心逻辑 ---
+
+    function generateId() {
+      let maxId = -1;
+      state.tasks.forEach(t => {
+        const num = parseInt(t.id, 10);
+        if (!isNaN(num) && num > maxId) {
+          maxId = num;
+        }
+      });
+      const nextId = maxId + 1;
+      return String(nextId).padStart(3, '0');
+    }
+
+    function isOldLayoutXY(parsed) {
+      const c0 = parsed?.layout?.cols?.[0];
+      const r0 = parsed?.layout?.rows?.[0];
+      if (!c0 || !r0) return false;
+      const colLetter = /^[a-z]+$/i.test(String(c0.key));
+      const rowDigit = /^\d+$/.test(String(r0.key));
+      return colLetter && rowDigit;
+    }
+
+    function migrateOldToNewXY(parsed) {
+      const oldCols = parsed.layout.cols;
+      const oldRows = parsed.layout.rows;
+      parsed.layout.cols = oldRows.map(r => ({ key: String(r.key), label: r.label }));
+      parsed.layout.rows = oldCols.map(c => ({ key: String(c.key).toLowerCase(), label: c.label }));
+      parsed.tasks.forEach(t => {
+        const m = String(t.pos).toLowerCase().match(/^([a-z]+)(\d+)$/);
+        if (m) t.pos = m[2] + m[1];
+      });
+    }
+
+    /** pos = X列数字 + Y行字母，如 1a；兼容旧式 a1 */
+    function parsePos(pos) {
+      const s = String(pos).toLowerCase();
+      let m = s.match(/^(\d+)([a-z]+)$/);
+      if (m) return { colKey: m[1], rowKey: m[2] };
+      m = s.match(/^([a-z]+)(\d+)$/);
+      if (m) return { colKey: m[2], rowKey: m[1] };
+      return null;
+    }
+
+    function formatPos(colKey, rowKey) {
+      return String(colKey).toLowerCase() + String(rowKey).toLowerCase();
+    }
+
+    function loadData() {
+      let raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        const legacy = localStorage.getItem('kanban_v3.1_data');
+        if (legacy) {
+          raw = legacy;
+          try {
+            localStorage.setItem(STORAGE_KEY, legacy);
+          } catch (e) { /* ignore */ }
+        }
+      }
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          state.layout = parsed.layout || state.layout;
+          state.tasks = parsed.tasks || state.tasks;
+          state.boardTitle = parsed.boardTitle || defaultState.boardTitle;
+          state.boardDesc = parsed.boardDesc || "";
+          if (isOldLayoutXY(state)) {
+            migrateOldToNewXY(state);
+            saveData();
+          }
+        } catch (e) { console.error('Data parse error', e); }
+      }
+
+      document.getElementById('boardTitle').innerText = state.boardTitle;
+      document.getElementById('boardDesc').innerText = state.boardDesc;
+
+      renderBoard();
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function updateHeaderInfo() {
+      state.boardTitle = document.getElementById('boardTitle').innerText.trim() || "未命名看板";
+      state.boardDesc = document.getElementById('boardDesc').innerText.trim();
+      saveData();
+    }
+
+    function rowHasKeywordMatch(row, keyword) {
+      const kw = keyword.toLowerCase();
+      return state.tasks.some(t => {
+        const p = parsePos(t.pos);
+        if (!p || p.rowKey !== row.key.toLowerCase()) return false;
+        const idStr = String(t.id);
+        const content = (t.content || '').toLowerCase();
+        return idStr.includes(kw) || content.includes(kw);
+      });
+    }
+
+    // 渲染矩阵面板（X=数字列，Y=字母行）
+    function renderBoard() {
+      const board = document.getElementById('board');
+      const allCols = state.layout.cols;
+      const allRows = state.layout.rows;
+      let rows = allRows;
+
+      if (viewFilter.mode === 'single') {
+        const rk = viewFilter.rowKey.toLowerCase();
+        rows = allRows.filter(r => r.key.toLowerCase() === rk);
+      } else if (viewFilter.mode === 'search') {
+        rows = allRows.filter(r => rowHasKeywordMatch(r, viewFilter.keyword));
+      }
+
+      const cols = allCols;
+      const boardFiltered = viewFilter.mode !== 'none';
+      board.classList.toggle('filter-active', boardFiltered);
+
+      board.style.gridTemplateColumns = `max-content repeat(${cols.length}, minmax(200px, 1fr))`;
+      if (rows.length === 0 && viewFilter.mode === 'search') {
+        board.style.gridTemplateRows = 'auto auto';
+      } else {
+        board.style.gridTemplateRows = `auto repeat(${Math.max(rows.length, 1)}, minmax(160px, 1fr))`;
+      }
+      board.innerHTML = '';
+
+      const topLeft = document.createElement('div');
+      topLeft.className = 'empty-top-left cell-box';
+      if (viewFilter.mode === 'search') {
+        topLeft.innerText = `搜索：${viewFilter.keyword}`;
+      } else if (viewFilter.mode === 'single') {
+        topLeft.innerText = `过滤 Y：${viewFilter.rowKey}`;
+      } else {
+        topLeft.innerText = '行列设置';
+      }
+      board.appendChild(topLeft);
+
+      cols.forEach((col, index) => {
+        const el = document.createElement('div');
+        el.className = 'cell-box header-cell';
+        el.onclick = () => editHeader('col', index);
+        el.innerHTML = `<span class="header-text">【${col.key}】${col.label}</span>`;
+        board.appendChild(el);
+      });
+
+      if (rows.length === 0 && viewFilter.mode === 'search') {
+        const empty = document.createElement('div');
+        empty.className = 'cell-box header-cell';
+        empty.style.gridColumn = '1 / -1';
+        empty.innerHTML = '<span class="header-text">未找到匹配的任务</span>';
+        board.appendChild(empty);
+        return;
+      }
+
+      rows.forEach((row) => {
+        const realRowIndex = allRows.findIndex(ar => ar.key.toLowerCase() === row.key.toLowerCase());
+        const rowHead = document.createElement('div');
+        rowHead.className = 'cell-box header-cell';
+        rowHead.onclick = () => editHeader('row', realRowIndex >= 0 ? realRowIndex : 0);
+        rowHead.innerHTML = `<span class="header-text">【${row.key.toUpperCase()}】${row.label}</span>`;
+        board.appendChild(rowHead);
+
+        cols.forEach(col => {
+          const cell = document.createElement('div');
+          cell.className = 'cell-box task-cell';
+          const posKey = formatPos(col.key, row.key);
+
+          const cellTasks = state.tasks.filter(t => String(t.pos).toLowerCase() === posKey);
+          cellTasks.forEach(task => {
+            const tCard = document.createElement('div');
+            tCard.className = 'task-card';
+
+            const idSpan = document.createElement('span');
+            idSpan.className = 'task-id';
+            idSpan.innerText = `【${task.id}】`;
+
+            tCard.appendChild(idSpan);
+            tCard.appendChild(document.createTextNode(task.content));
+
+            cell.appendChild(tCard);
+          });
+          board.appendChild(cell);
+        });
+      });
+    }
+
+    function showHelpOverlay() {
+      const el = document.getElementById('helpOverlay');
+      el.classList.add('visible');
+      const panel = document.getElementById('helpPanel');
+      panel.focus();
+    }
+
+    function hideHelpOverlay() {
+      document.getElementById('helpOverlay').classList.remove('visible');
+      document.getElementById('cmdInput').focus();
+    }
+
+    function normalizeCmdInput(str) {
+      return String(str).normalize('NFKC').replace(/\u200b/g, '').trim();
+    }
+
+    function executeCommand(cmdStr) {
+      const cmd = normalizeCmdInput(cmdStr);
+      if (!cmd) return;
+
+      const tokens = cmd.split(/\s+/).filter(Boolean);
+      const actionOrPos = (tokens[0] || '').toLowerCase();
+      const rest = tokens.slice(1).join(' ');
+
+      if (actionOrPos === 'c') {
+        viewFilter = { mode: 'none' };
+        renderBoard();
+        return;
+      }
+
+      if (actionOrPos === 'f') {
+        const yKey = rest.trim().toLowerCase();
+        if (!yKey) {
+          alert('请输入 Y 轴 id（字母），例如：f a');
+          return;
+        }
+        const row = state.layout.rows.find(r => r.key.toLowerCase() === yKey);
+        if (!row) {
+          alert(`未找到 Y 轴 [${yKey}]`);
+          return;
+        }
+        viewFilter = { mode: 'single', rowKey: yKey };
+        renderBoard();
+        return;
+      }
+
+      if (actionOrPos === 's') {
+        const keyword = rest.trim();
+        if (!keyword) {
+          alert('请输入关键字，例如：s 文档');
+          return;
+        }
+        viewFilter = { mode: 'search', keyword };
+        renderBoard();
+        return;
+      }
+
+      if (actionOrPos === 'h') {
+        showHelpOverlay();
+        return;
+      }
+
+      if (actionOrPos === 'd') {
+        const targetId = rest.trim().padStart(3, '0');
+        const initialLen = state.tasks.length;
+        state.tasks = state.tasks.filter(t => t.id !== targetId);
+        if (state.tasks.length === initialLen) alert(`未找到 ID 为 [${targetId}] 的任务`);
+        saveData();
+        renderBoard();
+        return;
+      }
+
+      const parsed = parsePos(actionOrPos);
+      if (!parsed) {
+        alert('无效指令。坐标格式：数字+字母（如 1a），或 d / f / s / c / h');
+        return;
+      }
+
+      const colKey = parsed.colKey;
+      const rowKey = parsed.rowKey;
+      const targetPos = formatPos(colKey, rowKey);
+
+      const colOk = state.layout.cols.some(c => String(c.key).toLowerCase() === colKey);
+      const rowOk = state.layout.rows.some(r => r.key.toLowerCase() === rowKey);
+      if (!colOk || !rowOk) {
+        alert(`坐标 [${actionOrPos}] 不存在，请先添加对应的列(X)或行(Y)。`);
+        return;
+      }
+
+      const restTrim = rest.trim();
+      if (!restTrim) {
+        alert('请输入任务内容或要移动的 ID。');
+        return;
+      }
+
+      let idCandidate = restTrim;
+      if (/^\d+$/.test(idCandidate)) {
+        idCandidate = idCandidate.padStart(3, '0');
+      }
+
+      const existingTask = state.tasks.find(t => t.id === idCandidate);
+
+      if (existingTask) {
+        existingTask.pos = targetPos;
+      } else {
+        state.tasks.push({
+          id: generateId(),
+          content: restTrim,
+          pos: targetPos
+        });
+      }
+
+      saveData();
+      renderBoard();
+    }
+
+    // --- 交互及管理功能 ---
+    document.addEventListener('keydown', (e) => {
+      const helpOpen = document.getElementById('helpOverlay').classList.contains('visible');
+      if (helpOpen) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          hideHelpOverlay();
+        }
+        return;
+      }
+
+      const inputEl = document.getElementById('cmdInput');
+      if (e.target.isContentEditable) {
+        return;
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey || e.target.tagName === 'INPUT' || e.key === 'Escape') {
+        return;
+      }
+      inputEl.focus();
+    });
+
+    const cmdInputEl = document.getElementById('cmdInput');
+    cmdInputEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === 'NumpadEnter') {
+        e.preventDefault();
+      }
+    });
+    cmdInputEl.addEventListener('keyup', function(e) {
+      if (e.key !== 'Enter' && e.key !== 'NumpadEnter') return;
+      if (e.isComposing) return;
+      executeCommand(this.value);
+      this.value = '';
+    });
+
+    function toggleSettings(e) {
+      e.stopPropagation();
+      document.getElementById('settingsMenu').classList.toggle('active');
+    }
+
+    document.addEventListener('click', () => {
+      document.getElementById('settingsMenu').classList.remove('active');
+    });
+
+    function editHeader(type, index) {
+      const list = type === 'col' ? state.layout.cols : state.layout.rows;
+      const item = list[index];
+      const typeName = type === 'col' ? '列 (X轴: 数字)' : '行 (Y轴: 字母)';
+
+      const input = prompt(`编辑${typeName}\n格式: 快捷键,显示名 (例: ${item.key},${item.label})\n留空取消，输入 DELETE 删除：`, `${item.key},${item.label}`);
+
+      if (!input) return;
+      if (input.trim().toUpperCase() === 'DELETE') {
+        if (confirm('删除行列将使该区域内的任务失去展示坐标，确认删除吗？')) {
+          list.splice(index, 1);
+          saveData();
+          renderBoard();
+        }
+        return;
+      }
+
+      const parts = input.split(',');
+      if (parts.length === 2) {
+        const rawKey = parts[0].trim();
+        const newLabel = parts[1].trim();
+        const newKey = type === 'col' ? rawKey : rawKey.toLowerCase();
+        if (!newKey || !newLabel) return;
+
+        const oldKey = type === 'col' ? String(item.key) : item.key.toLowerCase();
+        item.key = newKey;
+        item.label = newLabel;
+
+        if (String(oldKey).toLowerCase() !== String(newKey).toLowerCase()) {
+          state.tasks.forEach(t => {
+            const p = parsePos(t.pos);
+            if (!p) return;
+            if (type === 'col' && p.colKey === String(oldKey).toLowerCase()) {
+              t.pos = formatPos(newKey, p.rowKey);
+            }
+            if (type === 'row' && p.rowKey === oldKey) {
+              t.pos = formatPos(p.colKey, newKey);
+            }
+          });
+        }
+        saveData();
+        renderBoard();
+      } else {
+        alert('格式错误，请使用英文逗号分隔快捷键和名称。');
+      }
+    }
+
+    function addCol() {
+      const input = prompt('新增列 (X轴·数字)\n格式: 数字,显示名 (例: 4,待审核)：');
+      if (input && input.includes(',')) {
+        const [k, l] = input.split(',');
+        state.layout.cols.push({ key: k.trim(), label: l.trim() });
+        saveData();
+        renderBoard();
+      }
+    }
+
+    function addRow() {
+      const input = prompt('新增行 (Y轴·字母)\n格式: 字母,显示名 (例: c,项目C)：');
+      if (input && input.includes(',')) {
+        const [k, l] = input.split(',');
+        state.layout.rows.push({ key: k.trim().toLowerCase(), label: l.trim() });
+        saveData();
+        renderBoard();
+      }
+    }
+
+    function exportData() {
+      updateHeaderInfo(); 
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", "kanban_data.json");
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedState = JSON.parse(e.target.result);
+          if (importedState.layout && importedState.tasks) {
+            state = importedState;
+            if (isOldLayoutXY(state)) migrateOldToNewXY(state);
+            viewFilter = { mode: 'none' };
+            saveData();
+            loadData();
+            alert('导入成功！');
+          } else {
+            alert('JSON 格式不符合规范！');
+          }
+        } catch (err) {
+          alert('解析失败，请检查文件内容。');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function resetData() {
+      if(confirm('警告：此操作将清空所有数据并恢复默认示例。确认重置？')) {
+        state = JSON.parse(JSON.stringify(defaultState));
+        viewFilter = { mode: 'none' };
+        saveData();
+        loadData();
+      }
+    }
+
+    // --- 初始化 ---
+    loadData();
+
+  </script>
+</body>
+</html>
