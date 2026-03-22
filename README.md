@@ -32,6 +32,7 @@
 - [**MDWiki主题改良**：](./projects/mdwiki/sakura.html) 改良了两个主题，前面展示的是Sakura，还有一个[报纸](./projects/mdwiki/newspater.html)主题的。
 - [**无Class的美观CSS**：](./projects/css-ref/demo.html) 一套从Typora主题转换来的无类CSS，可用于快速搭建美观网站。
 - [**古诗词乱选**：](./projects/RandomPoem/index.html) 写着玩的一个小网页，数据来源《乐府诗集》、《全唐诗》、《全宋词》，玩法就是点一下就会随机把一些古诗词片段组合在一起...
+- [**坐标看板**：](./projects/kanban/index.html) 一个可以用键盘快捷操作的看板，方便进行项目或人员管理
 
 ### 带后端的工具
 
