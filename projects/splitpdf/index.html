@@ -7,10 +7,10 @@
     
     <script src="./pdf-lib.min.js"></script>
     
-    <script src="./pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
     <script>
         // 必须配置 workerSrc
-        pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.worker.min.js';
     </script>
     
     <style>
@@ -254,6 +254,11 @@
                 <option value="vertical">垂直切割（长边对半分 - 左右两页）</option>
                 <option value="horizontal">水平切割（短边对半分 - 上下两页）</option>
             </select>
+
+            <label style="display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; cursor: pointer; line-height: 1.4;">
+                <input type="checkbox" id="mirrorOddEven" style="margin-top: 3px;">
+                <span>单双页镜像：偶数页自动镜像裁切区域与分割线（垂直切割为左右镜像，水平切割为上下镜像）</span>
+            </label>
             
             <button id="splitBtn" onclick="splitAndDownload()" disabled>步骤 3: 切割并生成 A4 PDF</button>
             <button id="downloadBtn" style="display: none;">下载分割后的 PDF</button>
@@ -268,6 +273,7 @@
                 • <span style="color: #007bff;">蓝色圆点</span>：拖拽调整分割线位置<br>
                 • <span style="color: #28a745;">绿色方块</span>：拖拽调整边界位置<br>
                 • 每部分将自动铺满A4页面<br>
+                • 若勾选「单双页镜像」，预览仍表示奇数页；第 2、4、6… 页导出时裁切框与分割线会相对本页做镜像<br>
                 <span class="mobile-hint" style="display: none; color: #666; font-size: 12px;">
                     📱 移动设备：直接触摸拖拽控制点
                 </span>
@@ -321,6 +327,7 @@
     const previewCanvas = document.getElementById('previewCanvas');
     const ctx = overlayCanvas.getContext('2d');
     const splitModeEl = document.getElementById('splitMode');
+    const mirrorOddEvenEl = document.getElementById('mirrorOddEven');
     const sizeWarningEl = document.getElementById('sizeWarning');
     const previewWrapper = document.getElementById('previewWrapper');
     const previewHint = document.getElementById('previewHint');
@@ -569,6 +576,38 @@
         dragTarget = null;
     }
 
+    /** 单双页镜像：偶数页（0-based 索引为奇数）对裁切与分割线做镜像 */
+    function getEffectiveCropAndSplitForPage(pageIndex0, mode) {
+        const mirror = mirrorOddEvenEl && mirrorOddEvenEl.checked && (pageIndex0 % 2 === 1);
+        if (!mirror) {
+            return {
+                boundaries: { ...customBoundaries },
+                split: customSplitPosition
+            };
+        }
+        if (mode === 'vertical') {
+            return {
+                boundaries: {
+                    top: customBoundaries.top,
+                    bottom: customBoundaries.bottom,
+                    left: 1 - customBoundaries.right,
+                    right: 1 - customBoundaries.left
+                },
+                split: 1 - customSplitPosition
+            };
+        }
+        // horizontal
+        return {
+            boundaries: {
+                top: 1 - customBoundaries.bottom,
+                bottom: 1 - customBoundaries.top,
+                left: customBoundaries.left,
+                right: customBoundaries.right
+            },
+            split: 1 - customSplitPosition
+        };
+    }
+
     // --- 事件处理和 PDF-LIB 切割逻辑 ---
 
     // 重新渲染预览和切割示意图 (响应式调整或模式切换)
@@ -642,6 +681,14 @@
         }
     });
 
+    mirrorOddEvenEl.addEventListener('change', () => {
+        if (pdfDataUrl) {
+            updatePreview();
+        } else {
+            drawVisualization(previewCanvas.width || ASSUMED_A3_WIDTH, previewCanvas.height || ASSUMED_A3_HEIGHT, splitModeEl.value);
+        }
+    });
+
     // --- PDF-LIB 切割逻辑 (保持多页处理和 embedPage) ---
     async function splitAndDownload() {
         if (!originalPdfDoc) {
@@ -659,6 +706,7 @@
 
             for (let i = 0; i < totalPages; i++) {
                 const currentPage = originalPdfDoc.getPage(i);
+                const { boundaries: effBoundaries, split: effSplit } = getEffectiveCropAndSplitForPage(i, mode);
                 
                 // 1. 获取当前页面的尺寸 (如果有效，否则使用假定尺寸)
                 let currentW = currentPage.getWidth();
@@ -672,17 +720,17 @@
                 // 2. 嵌入当前页面
                 const embeddedPage = await newPdfDoc.embedPage(currentPage);
                 
-                // 3. 计算自定义边界和切割位置
-                const cropLeft = customBoundaries.left * currentW;
-                const cropRight = customBoundaries.right * currentW;
-                const cropTop = customBoundaries.top * currentH;
-                const cropBottom = customBoundaries.bottom * currentH;
+                // 3. 计算自定义边界和切割位置（单双页镜像时偶数页使用镜像后的值）
+                const cropLeft = effBoundaries.left * currentW;
+                const cropRight = effBoundaries.right * currentW;
+                const cropTop = effBoundaries.top * currentH;
+                const cropBottom = effBoundaries.bottom * currentH;
                 const cropWidth = cropRight - cropLeft;
                 const cropHeight = cropBottom - cropTop;
                 
                 // 3. 切割逻辑
                 if (mode === 'vertical') {
-                    const splitX = cropLeft + cropWidth * customSplitPosition;
+                    const splitX = cropLeft + cropWidth * effSplit;
                     const leftWidth = splitX - cropLeft;
                     const rightWidth = cropRight - splitX;
                     
@@ -733,7 +781,7 @@
                     page2.setCropBox(rightOffsetX, rightOffsetY, rightScaledWidth, rightScaledHeight);
                     
                 } else if (mode === 'horizontal') {
-                    const splitY = cropTop + cropHeight * customSplitPosition;
+                    const splitY = cropTop + cropHeight * effSplit;
                     const topHeight = splitY - cropTop;
                     const bottomHeight = cropBottom - splitY;
                     
