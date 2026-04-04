@@ -254,6 +254,11 @@
       box-shadow: var(--shadow-md);
       border-color: #cbd5e1;
     }
+    .task-card.search-hit {
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25), var(--shadow-sm);
+      background: #fffbeb;
+    }
 
     /* 嵌入在文本前方的 ID */
     .task-id {
@@ -420,7 +425,7 @@
   <div class="cmd-bar-wrapper">
     <div class="cmd-bar">
       <span class="cmd-prefix">❯</span>
-      <input type="text" id="cmdInput" class="cmd-input" placeholder="1a 任务 | d 001 | f a | s 关键字 | c | h" autocomplete="off">
+      <input type="text" id="cmdInput" class="cmd-input" placeholder="1a 任务 | d 001 | f a/b 或 f a 1 | s 关键字 | c 退一级 | cc 清空 | h" autocomplete="off">
       <div class="cmd-hint">Enter 执行</div>
     </div>
   </div>
@@ -431,9 +436,12 @@
       <pre id="helpBody">坐标：X=数字列，Y=字母行，如 1a 表示第 1 列、第 a 行。
 1a 内容        在 1a 录入任务；纯数字为移动已有任务
 d 001          删除任务
-f a            仅显示 Y 轴 a，铺满视图
-s 关键字       仅显示含关键字的任务所在 Y 行
-c              清除 f / s 过滤，恢复完整列表
+f a / f 1      聚焦 Y 或 X（支持二次筛选）
+f a/b / f 1/2  同轴多选：斜杠 / 分隔多个 id，如多行或多列同时显示
+f a 1          一次同时聚焦 Y+X（与 f a/… 1/… 可组合理解）
+s 关键字       高亮命中任务，仅显示命中相关行列；有结果时自动滚到首条命中便于查看
+c              退回上一级筛选（若仅一级则清空）
+cc             清空全部筛选，恢复完整列表
 h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
       <div class="help-foot">按 Enter 关闭</div>
     </div>
@@ -442,7 +450,7 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
   <script>
     // --- 默认数据结构 ---
     const defaultState = {
-      boardTitle: "极简坐标指令看板 V3.2",
+      boardTitle: "极简坐标指令看板 V3.3",
       boardDesc: "X=数字列，Y=字母行；坐标如 1a",
       layout: {
         cols: [{ key: "1", label: "待办" }, { key: "2", label: "进行中" }, { key: "3", label: "已完成" }],
@@ -457,8 +465,9 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
 
     let state = JSON.parse(JSON.stringify(defaultState));
 
-    /** @type {{ mode: 'none' } | { mode: 'single', rowKey: string } | { mode: 'search', keyword: string }} */
-    let viewFilter = { mode: 'none' };
+    /** @type {Array<{ axis: 'x' | 'y', keys: string[] }>} */
+    let focusFilters = [];
+    let searchKeyword = '';
 
     const STORAGE_KEY = 'kanban_v3.2_data';
 
@@ -551,15 +560,86 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
       saveData();
     }
 
-    function rowHasKeywordMatch(row, keyword) {
-      const kw = keyword.toLowerCase();
-      return state.tasks.some(t => {
-        const p = parsePos(t.pos);
-        if (!p || p.rowKey !== row.key.toLowerCase()) return false;
-        const idStr = String(t.id);
-        const content = (t.content || '').toLowerCase();
-        return idStr.includes(kw) || content.includes(kw);
-      });
+    function taskMatchesKeyword(task, keyword) {
+      const kw = String(keyword || '').trim().toLowerCase();
+      if (!kw) return false;
+      const idStr = String(task.id).toLowerCase();
+      const content = String(task.content || '').toLowerCase();
+      return idStr.includes(kw) || content.includes(kw);
+    }
+
+    /** @param {Set<'x'|'y'>} axesUsed 本行 f 指令中已出现的轴，用于消解「列键与行键重名」 */
+    function getFocusAxisAndKey(rawKey, axesUsed = new Set()) {
+      const key = String(rawKey || '').trim().toLowerCase();
+      if (!key) return null;
+      const colExists = state.layout.cols.some(c => String(c.key).toLowerCase() === key);
+      const rowExists = state.layout.rows.some(r => String(r.key).toLowerCase() === key);
+      if (!colExists && !rowExists) return null;
+
+      if (colExists && !rowExists) return { axis: 'x', key };
+      if (!colExists && rowExists) return { axis: 'y', key };
+
+      if (axesUsed.has('x') && !axesUsed.has('y')) return { axis: 'y', key };
+      if (axesUsed.has('y') && !axesUsed.has('x')) return { axis: 'x', key };
+      return { axis: /^\d+$/.test(key) ? 'x' : 'y', key };
+    }
+
+    function applyFocusCommandFromSegments(segments) {
+      const axesUsed = new Set();
+      const byAxis = { x: [], y: [] };
+      for (const seg of segments) {
+        const fk = getFocusAxisAndKey(seg, axesUsed);
+        if (!fk) {
+          alert(`未找到轴标识 [${seg}]`);
+          return false;
+        }
+        if (!byAxis[fk.axis].includes(fk.key)) byAxis[fk.axis].push(fk.key);
+        axesUsed.add(fk.axis);
+      }
+
+      const prevX = focusFilters.find(f => f.axis === 'x')?.keys ?? [];
+      const prevY = focusFilters.find(f => f.axis === 'y')?.keys ?? [];
+      const newX = byAxis.x.length ? byAxis.x : prevX;
+      const newY = byAxis.y.length ? byAxis.y : prevY;
+
+      const prevOrder = focusFilters.map(f => f.axis);
+      const bothAxesInCmd = byAxis.x.length > 0 && byAxis.y.length > 0;
+      focusFilters = [];
+      if (prevOrder.length === 2 && !bothAxesInCmd) {
+        for (const ax of prevOrder) {
+          if (ax === 'x' && newX.length) focusFilters.push({ axis: 'x', keys: [...newX] });
+          if (ax === 'y' && newY.length) focusFilters.push({ axis: 'y', keys: [...newY] });
+        }
+      } else {
+        if (newX.length) focusFilters.push({ axis: 'x', keys: [...newX] });
+        if (newY.length) focusFilters.push({ axis: 'y', keys: [...newY] });
+      }
+      return true;
+    }
+
+    function clearAllFilters() {
+      focusFilters = [];
+      searchKeyword = '';
+    }
+
+    function getFilterLevelCount() {
+      return focusFilters.length + (searchKeyword ? 1 : 0);
+    }
+
+    function popOneFilterLevel() {
+      const levels = getFilterLevelCount();
+      if (levels === 0) return;
+      if (levels === 1) {
+        clearAllFilters();
+        return;
+      }
+      if (searchKeyword) {
+        searchKeyword = '';
+        return;
+      }
+      if (focusFilters.length > 0) {
+        focusFilters = focusFilters.slice(0, -1);
+      }
     }
 
     // 渲染矩阵面板（X=数字列，Y=字母行）
@@ -567,33 +647,53 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
       const board = document.getElementById('board');
       const allCols = state.layout.cols;
       const allRows = state.layout.rows;
+      let cols = allCols;
       let rows = allRows;
 
-      if (viewFilter.mode === 'single') {
-        const rk = viewFilter.rowKey.toLowerCase();
-        rows = allRows.filter(r => r.key.toLowerCase() === rk);
-      } else if (viewFilter.mode === 'search') {
-        rows = allRows.filter(r => rowHasKeywordMatch(r, viewFilter.keyword));
+      focusFilters.forEach(filter => {
+        const keySet = new Set(filter.keys.map(k => String(k).toLowerCase()));
+        if (filter.axis === 'x') {
+          cols = cols.filter(c => keySet.has(String(c.key).toLowerCase()));
+        } else {
+          rows = rows.filter(r => keySet.has(String(r.key).toLowerCase()));
+        }
+      });
+
+      if (searchKeyword) {
+        const visibleColSet = new Set(cols.map(c => String(c.key).toLowerCase()));
+        const visibleRowSet = new Set(rows.map(r => String(r.key).toLowerCase()));
+        const matchedColSet = new Set();
+        const matchedRowSet = new Set();
+
+        state.tasks.forEach(task => {
+          if (!taskMatchesKeyword(task, searchKeyword)) return;
+          const p = parsePos(task.pos);
+          if (!p) return;
+          if (!visibleColSet.has(p.colKey) || !visibleRowSet.has(p.rowKey)) return;
+          matchedColSet.add(p.colKey);
+          matchedRowSet.add(p.rowKey);
+        });
+
+        cols = cols.filter(c => matchedColSet.has(String(c.key).toLowerCase()));
+        rows = rows.filter(r => matchedRowSet.has(String(r.key).toLowerCase()));
       }
 
-      const cols = allCols;
-      const boardFiltered = viewFilter.mode !== 'none';
+      const boardFiltered = focusFilters.length > 0 || !!searchKeyword;
       board.classList.toggle('filter-active', boardFiltered);
 
       board.style.gridTemplateColumns = `max-content repeat(${cols.length}, minmax(200px, 1fr))`;
-      if (rows.length === 0 && viewFilter.mode === 'search') {
-        board.style.gridTemplateRows = 'auto auto';
-      } else {
-        board.style.gridTemplateRows = `auto repeat(${Math.max(rows.length, 1)}, minmax(160px, 1fr))`;
-      }
+      board.style.gridTemplateRows = `auto repeat(${Math.max(rows.length, 1)}, minmax(160px, 1fr))`;
       board.innerHTML = '';
 
       const topLeft = document.createElement('div');
       topLeft.className = 'empty-top-left cell-box';
-      if (viewFilter.mode === 'search') {
-        topLeft.innerText = `搜索：${viewFilter.keyword}`;
-      } else if (viewFilter.mode === 'single') {
-        topLeft.innerText = `过滤 Y：${viewFilter.rowKey}`;
+      if (focusFilters.length > 0 || searchKeyword) {
+        const focusText = focusFilters.map((f, idx) => {
+          const label = f.keys.join('/');
+          return `${idx + 1}次${f.axis === 'x' ? 'X' : 'Y'}:${label}`;
+        }).join(' · ');
+        const searchText = searchKeyword ? `搜索:${searchKeyword}` : '';
+        topLeft.innerText = [focusText, searchText].filter(Boolean).join(' | ');
       } else {
         topLeft.innerText = '行列设置';
       }
@@ -607,11 +707,11 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
         board.appendChild(el);
       });
 
-      if (rows.length === 0 && viewFilter.mode === 'search') {
+      if (rows.length === 0 || cols.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'cell-box header-cell';
         empty.style.gridColumn = '1 / -1';
-        empty.innerHTML = '<span class="header-text">未找到匹配的任务</span>';
+        empty.innerHTML = `<span class="header-text">${searchKeyword ? '未找到命中的搜索结果' : '当前筛选无可显示的行或列'}</span>`;
         board.appendChild(empty);
         return;
       }
@@ -629,10 +729,17 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
           cell.className = 'cell-box task-cell';
           const posKey = formatPos(col.key, row.key);
 
-          const cellTasks = state.tasks.filter(t => String(t.pos).toLowerCase() === posKey);
+          const cellTasks = state.tasks.filter(t => {
+            if (String(t.pos).toLowerCase() !== posKey) return false;
+            if (!searchKeyword) return true;
+            return taskMatchesKeyword(t, searchKeyword);
+          });
           cellTasks.forEach(task => {
             const tCard = document.createElement('div');
             tCard.className = 'task-card';
+            if (taskMatchesKeyword(task, searchKeyword)) {
+              tCard.classList.add('search-hit');
+            }
 
             const idSpan = document.createElement('span');
             idSpan.className = 'task-id';
@@ -646,6 +753,16 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
           board.appendChild(cell);
         });
       });
+
+      if (searchKeyword) {
+        requestAnimationFrame(() => {
+          const boardEl = document.getElementById('board');
+          const hit = boardEl && boardEl.querySelector('.task-card.search-hit');
+          if (hit) {
+            hit.scrollIntoView({ block: 'start', behavior: 'smooth', inline: 'nearest' });
+          }
+        });
+      }
     }
 
     function showHelpOverlay() {
@@ -673,23 +790,27 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
       const rest = tokens.slice(1).join(' ');
 
       if (actionOrPos === 'c') {
-        viewFilter = { mode: 'none' };
+        popOneFilterLevel();
+        renderBoard();
+        return;
+      }
+
+      if (actionOrPos === 'cc') {
+        clearAllFilters();
         renderBoard();
         return;
       }
 
       if (actionOrPos === 'f') {
-        const yKey = rest.trim().toLowerCase();
-        if (!yKey) {
-          alert('请输入 Y 轴 id（字母），例如：f a');
+        const segments = tokens.slice(1)
+          .flatMap(t => String(t).split('/'))
+          .map(s => s.trim().toLowerCase())
+          .filter(Boolean);
+        if (segments.length === 0) {
+          alert('请输入 X/Y 轴 id，例如：f 1、f a、f a/b 或 f a 1');
           return;
         }
-        const row = state.layout.rows.find(r => r.key.toLowerCase() === yKey);
-        if (!row) {
-          alert(`未找到 Y 轴 [${yKey}]`);
-          return;
-        }
-        viewFilter = { mode: 'single', rowKey: yKey };
+        if (!applyFocusCommandFromSegments(segments)) return;
         renderBoard();
         return;
       }
@@ -700,7 +821,7 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
           alert('请输入关键字，例如：s 文档');
           return;
         }
-        viewFilter = { mode: 'search', keyword };
+        searchKeyword = keyword;
         renderBoard();
         return;
       }
@@ -722,7 +843,7 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
 
       const parsed = parsePos(actionOrPos);
       if (!parsed) {
-        alert('无效指令。坐标格式：数字+字母（如 1a），或 d / f / s / c / h');
+        alert('无效指令。坐标格式：数字+字母（如 1a），或 d / f / s / c / cc / h');
         return;
       }
 
@@ -895,7 +1016,8 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
           if (importedState.layout && importedState.tasks) {
             state = importedState;
             if (isOldLayoutXY(state)) migrateOldToNewXY(state);
-            viewFilter = { mode: 'none' };
+            focusFilters = [];
+            searchKeyword = '';
             saveData();
             loadData();
             alert('导入成功！');
@@ -913,7 +1035,8 @@ h              输入 h 后 Enter 打开本说明；弹窗内 Enter 关闭</pre>
     function resetData() {
       if(confirm('警告：此操作将清空所有数据并恢复默认示例。确认重置？')) {
         state = JSON.parse(JSON.stringify(defaultState));
-        viewFilter = { mode: 'none' };
+        focusFilters = [];
+        searchKeyword = '';
         saveData();
         loadData();
       }
