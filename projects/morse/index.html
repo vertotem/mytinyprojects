@@ -23,8 +23,8 @@
             font-family: 'Inter', -apple-system, sans-serif;
             background: var(--bg-color); color: var(--text-color);
             display: flex; flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
+            height: 100vh;
+            height: 100dvh;
             overflow: hidden;
         }
 
@@ -34,11 +34,13 @@
 
         /* 滑动视口 */
         .card-wrapper {
-            flex: 1; width: 100%; overflow: auto;
+            flex: 0 0 auto; width: 100%; overflow: auto;
             display: flex; justify-content: flex-start; align-items: flex-start;
             padding: 20px; cursor: grab;
             -ms-overflow-style: none; scrollbar-width: none;
             overscroll-behavior: contain;
+            min-height: 0;
+            padding-bottom: 130px;
         }
         .card-wrapper::-webkit-scrollbar { display: none; }
         .card-wrapper:active { cursor: grabbing; }
@@ -51,6 +53,7 @@
             border: 1px solid rgba(255,255,255,0.05);
             display: block;
             width: 100%;
+            min-width: 0;
             height: auto;
         }
 
@@ -99,6 +102,11 @@
 
         /* 底部控制区 */
         .controls {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 100;
             display: flex; gap: 15px;
             padding: 15px 20px calc(16px + env(safe-area-inset-bottom, 0px));
             background: rgba(11, 14, 20, 0.85); backdrop-filter: blur(20px);
@@ -122,6 +130,7 @@
             .current-seq { font-size: 16px; letter-spacing: 3px; }
             .current-char { font-size: 34px; height: 44px; }
             .card-wrapper { padding: 12px; }
+            .card-wrapper { padding-bottom: 110px; }
             .controls { padding: 12px 12px calc(10px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
             .btn { height: 72px; max-width: none; }
         }
@@ -786,6 +795,7 @@
         let domLines = {};
         let domShapes = {};
         let domGroups = {};
+        const DEBUG_SCROLL = false;
 
         function getPos(node) {
             return { x: centerX + node.x * gridX, y: startY + node.y * gridY };
@@ -846,6 +856,52 @@
             const vbH = (maxY - minY) + pad * 2 + 120;
             svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
             svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+            resizeSvgForScrollableViewport();
+        }
+
+        function resizeSvgForScrollableViewport() {
+            const wrapper = document.getElementById('card-wrapper');
+            if (!wrapper) return;
+            // 保持 SVG 自适应显示
+            svg.removeAttribute('width');
+            svg.removeAttribute('height');
+            svg.style.width = '';
+            svg.style.height = '';
+            if (DEBUG_SCROLL) {
+                console.log('[scroll-debug][resize-svg-json]', JSON.stringify({
+                    wrapperClient: { w: wrapper.clientWidth, h: wrapper.clientHeight },
+                    svgClientAfter: { w: svg.clientWidth, h: svg.clientHeight },
+                    wrapperScroll: { w: wrapper.scrollWidth, h: wrapper.scrollHeight }
+                }));
+            }
+        }
+
+        function syncViewportLayout() {
+            const wrapper = document.getElementById('card-wrapper');
+            const header = document.querySelector('header');
+            const controls = document.querySelector('.controls');
+            if (!wrapper || !header || !controls) return;
+            const viewportH = Math.min(
+                window.innerHeight || Number.MAX_SAFE_INTEGER,
+                document.documentElement.clientHeight || Number.MAX_SAFE_INTEGER,
+                window.visualViewport?.height || Number.MAX_SAFE_INTEGER
+            );
+            const available = viewportH - header.offsetHeight - controls.offsetHeight;
+            wrapper.style.height = `${Math.max(260, available)}px`;
+            wrapper.style.maxHeight = `${Math.max(260, available)}px`;
+            resizeSvgForScrollableViewport();
+            if (DEBUG_SCROLL) {
+                console.log('[scroll-debug][viewport-json]', JSON.stringify({
+                    viewportH,
+                    innerHeight: window.innerHeight,
+                    docClientH: document.documentElement.clientHeight,
+                    visualViewportH: window.visualViewport?.height ?? null,
+                    headerH: header.offsetHeight,
+                    controlsH: controls.offsetHeight,
+                    wrapperH: wrapper.clientHeight,
+                    wrapperInlineHeight: wrapper.style.height || null
+                }));
+            }
         }
 
         function renderTree() {
@@ -966,6 +1022,17 @@
             const slider = document.getElementById('card-wrapper');
             requestAnimationFrame(() => {
                 slider.scrollLeft = (svg.clientWidth - slider.clientWidth) / 2;
+                if (DEBUG_SCROLL) {
+                    const vb = svg.viewBox.baseVal;
+                    const payload = {
+                        sliderClient: { w: slider.clientWidth, h: slider.clientHeight },
+                        sliderScroll: { w: slider.scrollWidth, h: slider.scrollHeight },
+                        svgClient: { w: svg.clientWidth, h: svg.clientHeight },
+                        viewBox: { x: vb.x, y: vb.y, w: vb.width, h: vb.height },
+                        initialScroll: { left: slider.scrollLeft, top: slider.scrollTop }
+                    };
+                    console.log('[scroll-debug][rebuild-json]', JSON.stringify(payload));
+                }
             });
         }
 
@@ -1018,19 +1085,60 @@
             }
 
             // 自动滚动：把当前输入对应的节点滚到视窗中央（PC/移动端通用）
-            const activeGroup = domGroups[currentSequence];
+            let activeGroup = domGroups[currentSequence];
+            if (!activeGroup) {
+                // 当前串可能已超出有效路径，回退到最近存在的前缀节点
+                for (let i = currentSequence.length - 1; i > 0; i--) {
+                    const prefix = currentSequence.slice(0, i);
+                    if (domGroups[prefix]) {
+                        activeGroup = domGroups[prefix];
+                        break;
+                    }
+                }
+            }
             if (activeGroup) {
                 const container = document.getElementById('card-wrapper');
-                const elRect = activeGroup.getBoundingClientRect();
-                const cRect = container.getBoundingClientRect();
-                const elCenterX = elRect.left + elRect.width / 2;
-                const elCenterY = elRect.top + elRect.height / 2;
-                const cCenterX = cRect.left + cRect.width / 2;
-                const cCenterY = cRect.top + cRect.height / 2;
-                const dx = elCenterX - cCenterX;
-                const dy = elCenterY - cCenterY;
-                if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-                    container.scrollBy({ left: dx, top: dy, behavior: 'smooth' });
+                const bbox = activeGroup.getBBox();
+                const targetCenterX = bbox.x + bbox.width / 2;
+                const targetCenterY = bbox.y + bbox.height / 2;
+                const viewBox = svg.viewBox.baseVal;
+                const uniformScale = Math.min(
+                    svg.clientWidth / viewBox.width,
+                    svg.clientHeight / viewBox.height
+                );
+                const renderedW = viewBox.width * uniformScale;
+                const renderedH = viewBox.height * uniformScale;
+                const offsetX = (svg.clientWidth - renderedW) / 2;
+                const offsetY = (svg.clientHeight - renderedH) / 2;
+                const targetPxX = (targetCenterX - viewBox.x) * uniformScale + offsetX;
+                const targetPxY = (targetCenterY - viewBox.y) * uniformScale + offsetY;
+                const desiredLeft = targetPxX - container.clientWidth / 2;
+                const desiredTop = targetPxY - container.clientHeight / 2;
+                const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+                const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+                const nextLeft = Math.max(0, Math.min(maxLeft, desiredLeft));
+                const nextTop = Math.max(0, Math.min(maxTop, desiredTop));
+                if (DEBUG_SCROLL) {
+                    const payload = {
+                        sequence: currentSequence,
+                        fallbackUsed: activeGroup !== domGroups[currentSequence],
+                        bbox: { x: bbox.x, y: bbox.y, w: bbox.width, h: bbox.height },
+                        svgClient: { w: svg.clientWidth, h: svg.clientHeight },
+                        viewBox: { x: viewBox.x, y: viewBox.y, w: viewBox.width, h: viewBox.height },
+                        uniformScale,
+                        offset: { x: offsetX, y: offsetY },
+                        targetPx: { x: targetPxX, y: targetPxY },
+                        containerClient: { w: container.clientWidth, h: container.clientHeight },
+                        containerScroll: { w: container.scrollWidth, h: container.scrollHeight },
+                        currentScroll: { left: container.scrollLeft, top: container.scrollTop },
+                        desired: { left: desiredLeft, top: desiredTop },
+                        clamped: { left: nextLeft, top: nextTop },
+                        max: { left: maxLeft, top: maxTop }
+                    };
+                    console.log('[scroll-debug][updateUI-json]', JSON.stringify(payload));
+                }
+                if (Math.abs(container.scrollLeft - nextLeft) > 2 || Math.abs(container.scrollTop - nextTop) > 2) {
+                    container.scrollTo({ left: nextLeft, top: nextTop, behavior: 'auto' });
                 }
             }
         }
@@ -1083,6 +1191,7 @@
 
         // 初始视角居中对齐
         window.onload = () => {
+            syncViewportLayout();
             const enabled = loadEnabledGroups();
             // 初始化设置 UI
             const overlay = document.getElementById('settings-overlay');
@@ -1168,14 +1277,14 @@
             btnSave.addEventListener('click', () => {
                 const next = {
                     letters: tLetters.checked,
-                    numbers: tNumbers.checked,
+                    numbers: tNumbers.checked,数字：tNumbers.checked，
                     punct: tPunct.checked,
                     specialSignals: tSpecialSignals.checked,
                     latin: tLatin.checked,
                     bopomofo: tBopomofo.checked,
                     japanese: tJapanese.checked,
                     japaneseSymbols: tJapaneseSymbols.checked,
-                    greek: tGreek.checked,
+                    greek: tGreek.checked,希腊语：tGreek.checked，
                     cyrillic: tCyrillic.checked,
                     hangul: tHangul.checked
                 };
@@ -1188,6 +1297,9 @@
 
             rebuildTree(enabled);
             slider.scrollLeft = (svg.clientWidth - slider.clientWidth) / 2;
+            window.addEventListener('resize', () => {
+                syncViewportLayout();
+            });
         };
     </script>
 </body>
