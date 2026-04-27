@@ -825,6 +825,11 @@
                 }
             }
             if (nodes['-']) computeLeftLayout('-', -1);
+
+            // 让树形方向与底部按钮一致：点在左，横在右
+            Object.values(nodes).forEach(node => {
+                node.x = -node.x;
+            });
         }
 
         function setViewBoxFromNodes() {
