@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>莫斯密码训练器</title>
+    <style>
+        :root {
+            --bg-color: #0b101e;
+            --card-bg: #141b2d;
+            --text-color: #e2e8f0;
+            --line-color: #334155;
+            --dot-color: #0ea5e9;    
+            --dash-color: #48453f;   
+            --glow-dot: 0 0 15px rgba(14, 165, 233, 0.9);
+            --glow-dash: 0 0 15px rgba(245, 158, 11, 0.9);
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-color); color: var(--text-color);
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+        }
+
+        header { text-align: center; padding: 15px 0 5px; z-index: 10; }
+        .current-seq { font-size: 20px; letter-spacing: 5px; color: #94a3b8; height: 24px; }
+        .current-char { font-size: 42px; font-weight: 800; text-shadow: 0 0 15px rgba(255, 255, 255, 0.1); height: 50px; }
+
+        /* 滑动视口 */
+        .card-wrapper {
+            flex: 1; width: 100%; overflow: auto;
+            display: flex; justify-content: flex-start; align-items: flex-start;
+            padding: 20px; cursor: grab;
+            -ms-overflow-style: none; scrollbar-width: none;
+            overscroll-behavior: contain;
+        }
+        .card-wrapper::-webkit-scrollbar { display: none; }
+        .card-wrapper:active { cursor: grabbing; }
+
+        /* SVG 容器 */
+        .svg-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.05);
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* 完美相连的SVG线条 */
+        .tree-line {
+            stroke: var(--line-color);
+            stroke-width: 4px;
+            stroke-linecap: square; /* 让线条端点平齐，相交更完美 */
+            stroke-linejoin: miter;
+            transition: all 0.2s ease;
+        }
+
+        .tree-line.active-dot { stroke: var(--dot-color); stroke-width: 6px; filter: drop-shadow(var(--glow-dot)); z-index: 10; }
+        .tree-line.active-dash { stroke: var(--dash-color); stroke-width: 6px; filter: drop-shadow(var(--glow-dash)); z-index: 10; }
+
+        /* SVG 形状节点 */
+        .node-shape {
+            fill: var(--card-bg);
+            stroke: #64748b;
+            stroke-width: 3px;
+            transition: all 0.2s ease;
+        }
+        
+        .node-shape.active-dot { fill: var(--dot-color); stroke: var(--dot-color); filter: drop-shadow(var(--glow-dot)); }
+        .node-shape.active-dash { fill: var(--dash-color); stroke: var(--dash-color); filter: drop-shadow(var(--glow-dash)); }
+
+        .node-text {
+            fill: #cbd5e1;
+            font-size: 16px;
+            font-weight: 700;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+        .node-text-secondary {
+            fill: #94a3b8;
+            font-size: 10px;
+            font-weight: 600;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+        .active-dot + .node-text, .active-dash + .node-text { fill: #fff; }
+
+        /* 底部控制区 */
+        .controls {
+            display: flex; gap: 15px; padding: 15px 20px 30px;
+            background: rgba(11, 14, 20, 0.85); backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05); justify-content: center;
+        }
+        .btn {
+            flex: 1; max-width: 200px; height: 80px; border-radius: 16px; border: none;
+            cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: #fff; transition: transform 0.1s, box-shadow 0.2s; touch-action: manipulation;
+        }
+        .btn:active { transform: scale(0.94); }
+        .btn-dot { background: linear-gradient(135deg, #0284c7, #0369a1); box-shadow: 0 6px 0 #075985; }
+        .btn-dot:active { box-shadow: 0 0 0 #075985; transform: translateY(6px) scale(0.96); }
+        .btn-dash { background: linear-gradient(135deg, #d97706, #b45309); box-shadow: 0 6px 0 #92400e; }
+        .btn-dash:active { box-shadow: 0 0 0 #92400e; transform: translateY(6px) scale(0.96); }
+        .btn-icon { font-size: 32px; font-weight: bold; line-height: 1; }
+        .btn-hint { font-size: 12px; opacity: 0.6; margin-top: 6px; font-weight: 500; }
+
+        @media (max-width: 640px) {
+            header { padding: 12px 0 4px; }
+            .current-seq { font-size: 16px; letter-spacing: 3px; }
+            .current-char { font-size: 34px; height: 44px; }
+            .card-wrapper { padding: 12px; }
+            .controls { padding: 12px 12px 18px; gap: 12px; }
+            .btn { height: 72px; max-width: none; }
+        }
+
+        /* 设置（齿轮 + 弹窗） */
+        .header-bar {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0 64px; /* 给右侧齿轮留安全区，避免遮挡中间内容 */
+        }
+        .display-area { text-align: center; }
+        .gear-btn {
+            position: absolute;
+            right: 14px;
+            top: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(20, 27, 45, 0.85);
+            color: #cbd5e1;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+        .gear-btn:active { transform: scale(0.95); }
+        .gear-btn:hover { background: rgba(30, 41, 59, 0.9); border-color: rgba(255,255,255,0.14); }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 18px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            width: min(520px, 100%);
+            background: rgba(20, 27, 45, 0.96);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 18px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 40px);
+        }
+        .modal-header {
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .modal-title { font-weight: 800; letter-spacing: 0.5px; }
+        .modal-close {
+            border: none;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 22px;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.05); }
+        .modal-body { padding: 14px 16px 6px; overflow: auto; }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 12px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(11, 16, 30, 0.35);
+            margin-bottom: 10px;
+        }
+        .setting-row label { display: inline-flex; align-items: center; }
+        .setting-row:hover { background: rgba(11, 16, 30, 0.5); }
+        .setting-label { font-weight: 700; }
+        .setting-desc { font-size: 12px; opacity: 0.75; margin-top: 4px; }
+        .toggle {
+            width: 44px;
+            height: 26px;
+            border-radius: 20px;
+            background: rgba(148,163,184,0.25);
+            border: 1px solid rgba(255,255,255,0.10);
+            position: relative;
+            flex: 0 0 auto;
+            cursor: pointer;
+        }
+        .toggle::after {
+            content: "";
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: left 0.15s ease, background 0.2s ease;
+        }
+        input[type="checkbox"].toggle-input { display: none; }
+        input[type="checkbox"].toggle-input:checked + .toggle {
+            background: rgba(14,165,233,0.35);
+            border-color: rgba(14,165,233,0.45);
+        }
+        input[type="checkbox"].toggle-input:checked + .toggle::after {
+            left: 22px;
+            background: #0ea5e9;
+        }
+        .modal-footer {
+            padding: 12px 16px 16px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .small-btn {
+            border: none;
+            cursor: pointer;
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-weight: 800;
+            color: #fff;
+        }
+        .small-btn.secondary { background: rgba(148,163,184,0.18); color: #e2e8f0; }
+        .small-btn.secondary:hover { background: rgba(148,163,184,0.24); }
+        .small-btn.primary { background: linear-gradient(135deg, #0284c7, #0369a1); }
+        .small-btn.primary:hover { filter: brightness(1.06); }
+
+        @media (max-width: 640px) {
+            .header-bar { padding: 0 54px; }
+            .gear-btn { right: 10px; top: 6px; width: 38px; height: 38px; border-radius: 12px; }
+            .modal-overlay { padding: 12px; }
+            .modal { border-radius: 16px; max-height: calc(100vh - 24px); }
+            .modal-header { padding: 12px 14px; }
+            .modal-body { padding: 12px 14px 4px; }
+            .modal-footer { padding: 10px 14px 14px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-bar">
+            <button class="gear-btn" id="btn-gear" aria-label="设置" title="设置">⚙</button>
+            <div class="display-area">
+                <div class="current-seq" id="seq-display">等待输入</div>
+                <div class="current-char" id="char-display">-</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="card-wrapper" id="card-wrapper">
+        <svg class="svg-card" id="morse-svg"></svg>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-dot" id="btn-dot"><span class="btn-icon">●</span><span class="btn-hint">PC: [F] 键</span></button>
+        <button class="btn btn-dash" id="btn-dash"><span class="btn-icon">▬</span><span class="btn-hint">PC: [J] 键</span></button>
+    </div>
+
+    <div class="modal-overlay" id="settings-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">节点树显示设置</div>
+                <button class="modal-close" id="btn-settings-close" aria-label="关闭">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">字母</div>
+                        <div class="setting-desc">A-Z（含 CH）</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-letters" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">数字</div>
+                        <div class="setting-desc">0-9</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-numbers" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">标点符号</div>
+                        <div class="setting-desc">. , ? ! : ; / - _ " ' + = @</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-punct" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">特殊符号组</div>
+                        <div class="setting-desc">AAAAA AAA(.) HH AR(+) AS(&) TTTTT K T IMI(?) R SK BT(=) SOS</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-special-signals" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">拉丁字母</div>
+                        <div class="setting-desc">Ä È À Ĵ Ŝ É Ü Ð Ö Ĝ Ñ Ç</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-latin" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">注音符号</div>
+                        <div class="setting-desc">ㄅㄆㄇㄈ…（显示：注音 + 拼音）</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-bopomofo" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">日文电码</div>
+                        <div class="setting-desc">イロハニホヘト…（和文モールス）</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-japanese" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">日文符号组</div>
+                        <div class="setting-desc">ー 、 」 （ ） ホレ ラタ ゛ ゜</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-japanese-symbols" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">希腊字母组</div>
+                        <div class="setting-desc">Α Β Γ Δ… Ω + 双元音（HY YI OY OI EI AI AY EY）</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-greek" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">西里尔字母组</div>
+                        <div class="setting-desc">А Б В Г… Я（含扩展字母）</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-cyrillic" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">谚文字母组</div>
+                        <div class="setting-desc">ㄱ ㄴ ㄷ… ㅎ + ㅏ ㅑ ㅓ… ㅒ</div>
+                    </div>
+                    <label>
+                        <input class="toggle-input" type="checkbox" id="toggle-hangul" />
+                        <span class="toggle" aria-hidden="true"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="small-btn secondary" id="btn-settings-cancel">取消</button>
+                <button class="small-btn primary" id="btn-settings-save">保存并刷新</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = "morseEnabledGroups_v1";
+
+        // 分组字典（字母、数字、标点、拉丁扩展字母、注音符号、日文电码）
+        const MORSE_GROUPS = {
+            letters: {
+                ".":"E", "-":"T",
+                "..":"I", ".-":"A", "-.":"N", "--":"M",
+                "...":"S", "..-":"U", ".-.":"R", ".--":"W", "-..":"D", "-.-":"K", "--.":"G", "---":"O",
+                "....":"H", "...-":"V", "..-.":"F", ".-..":"L", ".--.":"P", ".---":"J", "-...":"B", "-.-.":"C", "-..-":"X", "-.--":"Y", "--..":"Z", "--.-":"Q",
+                "----":"CH"
+            },
+            numbers: {
+                ".....":"5", "....-":"4", "...--":"3", "..---":"2", ".----":"1",
+                "-....":"6", "--...":"7", "---..":"8", "----.":"9", "-----":"0"
+            },
+            punct: {
+                ".-.-.-":".",
+                "---...":":",
+                "--..--":",",
+                "-.-.-.":";",
+                "..--..":"?",
+                "-...-":"=",
+                ".----.":"'",
+                "-..-.":"/",
+                "-.-.--":"!",
+                "-....-":"-",
+                "..--.-":"_",
+                ".-..-.":"\"",
+                "-.--.":"(",
+                "-.--.-":")",
+                "...-..-":"$",
+                ".-...":"&",
+                ".--.-.":"@",
+                ".-.-.":"+"
+            },
+            specialSignals: {
+                ".-.-.-.-.-":"AAAAA、调用信号",
+                ".-.-.-":"AAA(.)、本句完",
+                "........":"HH、有错重发",
+                ".-.-.":"AR(+)、消息结束",
+                ".-...":"AS(&)、等待",
+                "-----":"TTTTT、正在接收",
+                "-.-":"K、请开始发送",
+                "-":"T、字收到了",
+                "..--..":"IMI(?)、请重复",
+                ".-.":"R、消息已收到",
+                "...-.-":"SK、终止",
+                "-...-":"BT(=)、分隔符",
+                "...---...":"SOS、求救信号"
+            },
+            latin: {
+                ".-.-":"Ä、Æ、Ą",
+                ".--.-":"À、Å",
+                "-.-..":"Ç、Ĉ、Ć",
+                ".--.":"Č",
+                "----":"CH、Š、Ĥ",
+                "..--.":"Ð",
+                ".-..-.":"È、Ł",
+                "..-..":"É、Đ、Ę",
+                "--.-.":"Ĝ",
+                "-.--.":"Ĥ",
+                ".---.":"Ĵ",
+                "--.--":"Ñ、Ń",
+                "---.":"Ö、Ø、Ó",
+                "...-...":"Ś",
+                "...-.":"Ŝ",
+                "...--..":"ß",
+                ".--..":"Þ",
+                "..--":"Ü、Ŭ",
+                "--..-.":"Ź",
+                ".--":"Ž",
+                "--..-":"Ż"
+            },
+            // 国音电码（使用 '.' 表示「·」，使用 '-' 表示「—/划」）
+            // 显示时：第一行注音，第二行拼音
+            bopomofo: {
+                "-...":"ㄅ、b",
+                ".--..":"ㄆ、p",
+                ".--.":"ㄇ、m",
+                "..-.-":"ㄈ、f",
+                ".--":"ㄉ、d",
+                "--.-":"ㄊ、t",
+                "---.":"ㄋ、n",
+                "...":"ㄌ、l",
+                "-..-":"ㄍ、g",
+                "--..-":"ㄎ、k",
+                "..--":"ㄏ、h",
+                "-..":"ㄐ、j",
+                ".-..-":"ㄑ、q",
+                "..--.":"ㄒ、x",
+                "....":"ㄓ、zh",
+                "-.-.":"ㄔ、ch",
+                ".-.":"ㄕ、sh",
+                ".---":"ㄖ、r",
+                "...-":"ㄗ、z",
+                "-.-..":"ㄘ、c",
+                "-.-":"ㄙ、s",
+                ".":"ㄧ、i",
+                "-":"ㄨ、u",
+                "..-":"ㄩ、ü",
+                "---":"ㄚ、a",
+                "--":"ㄛ、o",
+                "-.--":"ㄜ、e",
+                "--..":"ㄝ、ê",
+                ".-.-":"ㄞ、ai",
+                "..-..":"ㄟ、ei",
+                ".-..":"ㄠ、ao",
+                "..-.":"ㄡ、ou",
+                ".-":"ㄢ、an",
+                "-.":"ㄣ、en",
+                "--.":"ㄤ、ang",
+                "..":"ㄥ、eng",
+                ".---.":"ㄦ、er"
+            },
+            japanese: {
+                ".-":"い、イ、i",
+                ".-.-":"ろ、ロ、ro",
+                "-...":"は、ハ、ha",
+                "-.-.":"に、ニ、ni",
+                "-..":"ほ、ホ、ho",
+                ".":"へ、ヘ、he",
+                "..-..":"と、ト、to",
+                "..-.":"ち、チ、ti",
+                "--.":"り、リ、ri",
+                "....":"ぬ、ヌ、nu",
+                "-.--.":"る、ル、ru",
+                ".---":"を、ヲ、wo",
+                "-.-":"わ、ワ、wa",
+                ".-..":"か、カ、ka",
+                "--":"よ、ヨ、yo",
+                "-.":"た、タ、ta",
+                "---":"れ、レ、re",
+                "---.":"そ、ソ、so",
+                ".--.":"つ、ツ、tu",
+                "--.-":"ね、ネ、ne",
+                ".-.":"な、ナ、na",
+                "...":"ら、ラ、ra",
+                "-":"む、ム、mu",
+                "..-":"う、ウ、u",
+                ".-..-":"ゐ、ヰ、wi",
+                "..--":"の、ノ、no",
+                ".-...":"お、オ、o",
+                "...-":"く、ク、ku",
+                ".--":"や、ヤ、ya",
+                "-..-":"ま、マ、ma",
+                "-.--":"け、ケ、ke",
+                "--..":"ふ、フ、hu",
+                "----":"こ、コ、ko",
+                "-.---":"え、エ、e",
+                ".-.--":"て、テ、te",
+                "--.--":"あ、ア、a",
+                "-.-.-":"さ、サ、sa",
+                "-.-..":"き、キ、ki",
+                "-..--":"ゆ、ユ、yu",
+                "-...-":"め、メ、me",
+                "..-.-":"み、ミ、mi",
+                "--.-.":"し、シ、si",
+                ".--..":"ゑ、ヱ、we",
+                "--..-":"ひ、ヒ、hi",
+                "-..-.":"も、モ、mo",
+                ".---.":"せ、セ、se",
+                "---.-":"す、ス、su",
+                ".-.-.":"ん、ン、n"
+            },
+            japaneseSymbols: {
+                ".--.-":"ー、长音",
+                ".-.-.-":"、、断点",
+                ".-.-..":"」、段落",
+                "-.--.-":"（、前括弧",
+                ".-..-.":"）、后括弧",
+                "-..---":"ホレ、本文",
+                "...-.":"ラタ、更正/结束",
+                "..":"゛、浊音符",
+                "..--.":"゜、半浊音符"
+            },
+            greek: {
+                ".-":"Α、A",
+                "-...":"Β、B",
+                "--.":"Γ、G",
+                "-..":"Δ、D",
+                ".":"Ε、E",
+                "--..":"Ζ、Z",
+                "....":"Η、H",
+                "-.-.":"Θ、C",
+                "..":"Ι、I",
+                "-.-":"Κ、K",
+                ".-..":"Λ、L",
+                "--":"Μ、M",
+                "-.":"Ν、N",
+                "-..-":"Ξ、X",
+                "---":"Ο、O",
+                ".--.":"Π、P",
+                ".-.":"Ρ、R",
+                "...":"Σ、S、EI",
+                "-":"Τ、T",
+                "-.--":"Υ、Y",
+                "..-.":"Φ、F",
+                "----":"Χ、CH",
+                "--.-":"Ψ、Q",
+                ".--":"Ω、W",
+                "...-":"HY、V",
+                ".---":"YI、J",
+                "..-":"OY、U",
+                "---..":"OI、8",
+                ".-.-":"AI、Ä",
+                "..--":"AY、Ü",
+                "---.":"EY、Ö"
+            },
+            cyrillic: {
+                ".-.":"А、A",
+                "-....":"Б、B",
+                ".--.":"В、W",
+                "--..":"Г、Ѓ、Ґ、G",
+                "-...":"Д、D",
+                "..":"Е、Ё、E",
+                "...-.":"Ж、V",
+                "--...":"З、Z",
+                "...":"И、І、I",
+                ".---":"Й、Ј、J",
+                "-.-.":"К、Ќ、K、Ц、C",
+                ".-...":"Л、L",
+                "--.":"М、M",
+                "-..":"Н、N",
+                "---.":"О、Ӧ、O、Ч、Ö",
+                ".--..":"П、P",
+                ".-..":"Р、R",
+                "....":"С、S、Х、H",
+                "-.":"Т、T",
+                "..-.":"У、U",
+                "..-..":"Ф、F、Э、Є、É",
+                "----":"Ш、CH",
+                "--.-":"Щ、Q",
+                "-..-":"Ъ(')、Ь(`)、X",
+                "-.--":"Ы、Ь(`)、Y",
+                "..--":"Ю、Ü",
+                ".-.-":"Я、Ä",
+                "-..--":"Ђ",
+                ".---.":"Ї、Љ、Ĵ",
+                "--.--":"Њ",
+                "-.-..":"Ћ、Ç"
+            },
+            hangul: {
+                ".-..":"ㄱ、L",
+                "..-.":"ㄴ、F",
+                "-...":"ㄷ、B",
+                "...-":"ㄹ、V",
+                "--":"ㅁ、M",
+                ".--":"ㅂ、W",
+                "--.":"ㅅ、G",
+                "-.-":"ㅇ、K",
+                ".--.":"ㅈ、P",
+                "-.-.":"ㅊ、C",
+                "-..-":"ㅋ、X",
+                "--..":"ㅌ、Z",
+                "---":"ㅍ、O",
+                ".---":"ㅎ、J",
+                ".":"ㅏ、E",
+                "..":"ㅑ、I",
+                "-":"ㅓ、T",
+                "...":"ㅕ、S",
+                ".-":"ㅗ、A",
+                "-.":"ㅛ、N",
+                "....":"ㅜ、H",
+                ".-.":"ㅠ、R",
+                "-..":"ㅡ、D",
+                "..-":"ㅣ、U",
+                "-.--":"ㅔ、Y",
+                "--.-":"ㅐ、Q",
+                ".....-":"ㅖ、SU",
+                "....-":"ㅒ、IU"
+            }
+        };
+
+        function getDefaultEnabled() {
+            return { letters: true, numbers: true, punct: true, specialSignals: false, latin: false, bopomofo: false, japanese: false, japaneseSymbols: false, greek: false, cyrillic: false, hangul: false };
+        }
+
+        function loadEnabledGroups() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return getDefaultEnabled();
+                const parsed = JSON.parse(raw);
+                return {
+                    letters: parsed.letters !== false,
+                    numbers: parsed.numbers !== false,
+                    punct: parsed.punct !== false,
+                    specialSignals: parsed.specialSignals === true,
+                    latin: parsed.latin !== false,
+                    bopomofo: parsed.bopomofo !== false,
+                    japanese: parsed.japanese !== false,
+                    japaneseSymbols: parsed.japaneseSymbols !== false,
+                    greek: parsed.greek !== false,
+                    cyrillic: parsed.cyrillic === true,
+                    hangul: parsed.hangul === true
+                };
+            } catch {
+                return getDefaultEnabled();
+            }
+        }
+
+        function saveEnabledGroups(enabled) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(enabled));
+        }
+
+        function buildMorseDict(enabled) {
+            const out = {};
+            if (enabled.letters) Object.assign(out, MORSE_GROUPS.letters);
+            if (enabled.numbers) Object.assign(out, MORSE_GROUPS.numbers);
+            if (enabled.punct) Object.assign(out, MORSE_GROUPS.punct);
+            if (enabled.specialSignals) Object.assign(out, MORSE_GROUPS.specialSignals);
+            if (enabled.latin) Object.assign(out, MORSE_GROUPS.latin);
+            if (enabled.bopomofo) Object.assign(out, MORSE_GROUPS.bopomofo);
+            if (enabled.japanese) Object.assign(out, MORSE_GROUPS.japanese);
+            if (enabled.japaneseSymbols) Object.assign(out, MORSE_GROUPS.japaneseSymbols);
+            if (enabled.greek) Object.assign(out, MORSE_GROUPS.greek);
+            if (enabled.cyrillic) Object.assign(out, MORSE_GROUPS.cyrillic);
+            if (enabled.hangul) Object.assign(out, MORSE_GROUPS.hangul);
+            return out;
+        }
+
+        function buildConflictMap(groups) {
+            const keysByGroup = {};
+            for (const [g, dict] of Object.entries(groups)) {
+                keysByGroup[g] = new Set(Object.keys(dict));
+            }
+            const conflict = {};
+            const all = Object.keys(groups);
+            for (const a of all) {
+                conflict[a] = new Set();
+                for (const b of all) {
+                    if (a === b) continue;
+                    const sa = keysByGroup[a];
+                    const sb = keysByGroup[b];
+                    let has = false;
+                    for (const k of sa) {
+                        if (sb.has(k)) { has = true; break; }
+                    }
+                    if (has) conflict[a].add(b);
+                }
+            }
+            return conflict;
+        }
+
+        const CONFLICT_MAP = buildConflictMap(MORSE_GROUPS);
+
+        let morseDict = {};
+        let nodes = {};
+        let maxSequenceLength = 7;
+
+        // 2. 正交排版核心算法 (彻底抛弃手动坐标)
+        // 这个算法完美还原了图纸的逻辑：在同一水平线上延展，遇到转折则让出新的一行(Y++)，从而保证线路绝对不重叠相撞。
+        
+        const svg = document.getElementById("morse-svg");
+        const svgNS = "http://www.w3.org/2000/svg";
+        
+        const gridX = 85; 
+        const gridY = 60;
+        const centerX = 600; 
+        const startY = 120;
+
+        let gLines;
+        let gNodes;
+        let domLines = {};
+        let domShapes = {};
+        let domGroups = {};
+
+        function getPos(node) {
+            return { x: centerX + node.x * gridX, y: startY + node.y * gridY };
+        }
+
+        function computeLayouts() {
+            let rightMaxY = 0;
+            function computeRightLayout(seq, currentX) {
+                if (!nodes[seq]) return;
+                nodes[seq].x = currentX;
+                nodes[seq].y = rightMaxY;
+
+                const dotSeq = seq + '.';
+                if (nodes[dotSeq]) computeRightLayout(dotSeq, currentX + 1);
+
+                const dashSeq = seq + '-';
+                if (nodes[dashSeq]) {
+                    rightMaxY++;
+                    computeRightLayout(dashSeq, currentX);
+                }
+            }
+            if (nodes['.']) computeRightLayout('.', 1);
+
+            let leftMaxY = 0;
+            function computeLeftLayout(seq, currentX) {
+                if (!nodes[seq]) return;
+                nodes[seq].x = currentX;
+                nodes[seq].y = leftMaxY;
+
+                const dashSeq = seq + '-';
+                if (nodes[dashSeq]) computeLeftLayout(dashSeq, currentX - 1);
+
+                const dotSeq = seq + '.';
+                if (nodes[dotSeq]) {
+                    leftMaxY++;
+                    computeLeftLayout(dotSeq, currentX);
+                }
+            }
+            if (nodes['-']) computeLeftLayout('-', -1);
+        }
+
+        function setViewBoxFromNodes() {
+            const allNodes = Object.values(nodes);
+            if (!allNodes.length) return;
+            const xs = allNodes.map(n => centerX + n.x * gridX);
+            const ys = allNodes.map(n => startY + n.y * gridY);
+            const minX = Math.min(...xs), maxX = Math.max(...xs);
+            const minY = Math.min(startY - 80, ...ys), maxY = Math.max(...ys);
+            const pad = 90;
+            const vbX = minX - pad;
+            const vbY = minY - pad;
+            const vbW = (maxX - minX) + pad * 2;
+            const vbH = (maxY - minY) + pad * 2 + 120;
+            svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        }
+
+        function renderTree() {
+            while (svg.firstChild) svg.removeChild(svg.firstChild);
+            domLines = {};
+            domShapes = {};
+            domGroups = {};
+
+            gLines = document.createElementNS(svgNS, "g");
+            gNodes = document.createElementNS(svgNS, "g");
+            svg.appendChild(gLines);
+            svg.appendChild(gNodes);
+
+            const rootY = startY - 60;
+            const rootPoly = document.createElementNS(svgNS, "path");
+            rootPoly.setAttribute("d", `M${centerX-20},${rootY-20} L${centerX+20},${rootY-20} L${centerX},${rootY} Z`);
+            rootPoly.setAttribute("fill", "#94a3b8");
+            gNodes.appendChild(rootPoly);
+
+            const rootLine = document.createElementNS(svgNS, "line");
+            rootLine.setAttribute("x1", centerX); rootLine.setAttribute("y1", rootY);
+            rootLine.setAttribute("x2", centerX); rootLine.setAttribute("y2", startY);
+            rootLine.setAttribute("class", "tree-line");
+            gLines.appendChild(rootLine);
+
+            Object.values(nodes).forEach(node => {
+                const pos = getPos(node);
+                const isDot = node.seq.endsWith('.');
+
+                if (node.seq.length === 1) {
+                    const line = document.createElementNS(svgNS, "line");
+                    line.setAttribute("x1", centerX); line.setAttribute("y1", startY);
+                    line.setAttribute("x2", pos.x); line.setAttribute("y2", pos.y);
+                    line.setAttribute("class", "tree-line");
+                    domLines[node.seq] = line;
+                    gLines.appendChild(line);
+                } else if (node.seq.length > 1) {
+                    const parentSeq = node.seq.slice(0, -1);
+                    const parentNode = nodes[parentSeq];
+                    if (!parentNode) return;
+                    const parentPos = getPos(parentNode);
+
+                    const line = document.createElementNS(svgNS, "line");
+                    line.setAttribute("x1", parentPos.x); line.setAttribute("y1", parentPos.y);
+                    line.setAttribute("x2", pos.x); line.setAttribute("y2", pos.y);
+                    line.setAttribute("class", "tree-line");
+                    domLines[node.seq] = line;
+                    gLines.appendChild(line);
+                }
+
+                const group = document.createElementNS(svgNS, "g");
+                let shape;
+                if (isDot) {
+                    shape = document.createElementNS(svgNS, "circle");
+                    shape.setAttribute("cx", pos.x); shape.setAttribute("cy", pos.y);
+                    shape.setAttribute("r", 20);
+                    shape.setAttribute("class", "node-shape shape-dot");
+                } else {
+                    shape = document.createElementNS(svgNS, "rect");
+                    shape.setAttribute("x", pos.x - 22); shape.setAttribute("y", pos.y - 18);
+                    shape.setAttribute("width", 44); shape.setAttribute("height", 36);
+                    shape.setAttribute("rx", 6);
+                    shape.setAttribute("class", "node-shape shape-dash");
+                }
+
+                const parts = String(node.char ?? "").split("、").map(s => s.trim()).filter(Boolean);
+                const mainText = parts[0] ?? "";
+                const rest = parts.slice(1);
+
+                const text = document.createElementNS(svgNS, "text");
+                const hasSecondary = rest.length > 0;
+                // 两行都要落在形状内部：主字略上移，副字落在下半区
+                text.setAttribute("x", pos.x);
+                text.setAttribute("y", hasSecondary ? (pos.y - 5) : pos.y);
+                text.setAttribute("class", "node-text");
+                text.textContent = mainText;
+
+                let text2 = null;
+                if (rest.length) {
+                    text2 = document.createElementNS(svgNS, "text");
+                    text2.setAttribute("x", pos.x);
+                    text2.setAttribute("y", pos.y + 10);
+                    text2.setAttribute("class", "node-text-secondary");
+                    // 避免太长：剩余项用空格分隔，必要时截断
+                    const line = rest.join(" ");
+                    text2.textContent = line.length > 10 ? (line.slice(0, 9) + "…") : line;
+                }
+
+                group.appendChild(shape);
+                group.appendChild(text);
+                if (text2) group.appendChild(text2);
+
+                domShapes[node.seq] = shape;
+                domGroups[node.seq] = group;
+                gNodes.appendChild(group);
+            });
+        }
+
+        function rebuildTree(enabled) {
+            morseDict = buildMorseDict(enabled);
+            maxSequenceLength = Math.max(1, ...Object.keys(morseDict).map(seq => seq.length));
+
+            nodes = {};
+            Object.keys(morseDict).forEach(seq => {
+                nodes[seq] = { seq, char: morseDict[seq], x: 0, y: 0 };
+            });
+            Object.keys(morseDict).forEach(seq => {
+                for (let i = 1; i < seq.length; i++) {
+                    const prefix = seq.slice(0, i);
+                    if (!nodes[prefix]) nodes[prefix] = { seq: prefix, char: "", x: 0, y: 0 };
+                }
+            });
+
+            computeLayouts();
+            setViewBoxFromNodes();
+            renderTree();
+
+            const slider = document.getElementById('card-wrapper');
+            requestAnimationFrame(() => {
+                slider.scrollLeft = (svg.clientWidth - slider.clientWidth) / 2;
+            });
+        }
+
+
+        // 4. 交互逻辑与高亮反馈
+        let currentSequence = "";
+        let resetTimer = null;
+        let audioCtx;
+
+        function playBeep(isDash) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+            // di(点)：更高音更短；da(划)：更低音更长
+            const now = audioCtx.currentTime;
+            const dur = isDash ? 0.28 : 0.10;
+            osc.type = 'sine';
+            osc.frequency.value = isDash ? 520 : 760;
+
+            // 更“干净”的包络，避免爆音
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.16, now + 0.01);
+            gain.gain.linearRampToValueAtTime(0, now + dur);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + dur + 0.01);
+        }
+
+        function updateUI() {
+            document.querySelectorAll('.active-dot, .active-dash').forEach(el => {
+                el.classList.remove('active-dot', 'active-dash');
+            });
+
+            const seqDisp = document.getElementById("seq-display");
+            const charDisp = document.getElementById("char-display");
+
+            if (!currentSequence) {
+                seqDisp.textContent = "等待输入"; charDisp.textContent = "-"; return;
+            }
+
+            seqDisp.textContent = currentSequence.split('').map(c => c === '.' ? '●' : '▬').join(' ');
+            charDisp.textContent = morseDict[currentSequence] || "?";
+
+            let pathAcc = "";
+            for (let i = 0; i < currentSequence.length; i++) {
+                pathAcc += currentSequence[i];
+                const typeClass = pathAcc.endsWith('.') ? 'active-dot' : 'active-dash';
+                
+                if (domLines[pathAcc]) { domLines[pathAcc].classList.add(typeClass); }
+                if (domShapes[pathAcc]) { domShapes[pathAcc].classList.add(typeClass); }
+            }
+
+            // 自动滚动：把当前输入对应的节点滚到视窗中央（PC/移动端通用）
+            const activeGroup = domGroups[currentSequence];
+            if (activeGroup) {
+                const container = document.getElementById('card-wrapper');
+                const elRect = activeGroup.getBoundingClientRect();
+                const cRect = container.getBoundingClientRect();
+                const elCenterX = elRect.left + elRect.width / 2;
+                const elCenterY = elRect.top + elRect.height / 2;
+                const cCenterX = cRect.left + cRect.width / 2;
+                const cCenterY = cRect.top + cRect.height / 2;
+                const dx = elCenterX - cCenterX;
+                const dy = elCenterY - cCenterY;
+                if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+                    container.scrollBy({ left: dx, top: dy, behavior: 'smooth' });
+                }
+            }
+        }
+
+        function handleInput(char) {
+            clearTimeout(resetTimer);
+            if (currentSequence.length >= maxSequenceLength) currentSequence = ""; 
+            currentSequence += char;
+            playBeep(char === '-');
+            updateUI();
+            resetTimer = setTimeout(() => { currentSequence = ""; updateUI(); }, 1200);
+        }
+
+        const btnDot = document.getElementById('btn-dot'), btnDash = document.getElementById('btn-dash');
+        const trigger = (c) => (e) => { e.preventDefault(); handleInput(c); };
+        btnDot.onmousedown = btnDot.ontouchstart = trigger('.');
+        btnDash.onmousedown = btnDash.ontouchstart = trigger('-');
+
+        window.onkeydown = e => {
+            const overlay = document.getElementById('settings-overlay');
+            if (overlay && overlay.classList.contains('show')) return;
+            if (e.repeat) return;
+            const k = e.key.toLowerCase();
+            if (k === 'f') { btnDot.style.transform = 'scale(0.94)'; handleInput('.'); }
+            if (k === 'j') { btnDash.style.transform = 'scale(0.94)'; handleInput('-'); }
+        };
+        window.onkeyup = e => {
+            const overlay = document.getElementById('settings-overlay');
+            if (overlay && overlay.classList.contains('show')) return;
+            const k = e.key.toLowerCase();
+            if (k === 'f') btnDot.style.transform = '';
+            if (k === 'j') btnDash.style.transform = '';
+        };
+
+        // 卡片拖拽漫游功能
+        const slider = document.getElementById('card-wrapper');
+        let isDown = false, startX, dragStartY, scrollLeft, scrollTop;
+        slider.addEventListener('mousedown', e => {
+            isDown = true; startX = e.pageX - slider.offsetLeft; dragStartY = e.pageY - slider.offsetTop;
+            scrollLeft = slider.scrollLeft; scrollTop = slider.scrollTop;
+        });
+        slider.addEventListener('mouseleave', () => isDown = false);
+        slider.addEventListener('mouseup', () => isDown = false);
+        slider.addEventListener('mousemove', e => {
+            if (!isDown) return;
+            e.preventDefault();
+            slider.scrollLeft = scrollLeft - (e.pageX - slider.offsetLeft - startX);
+            slider.scrollTop = scrollTop - (e.pageY - slider.offsetTop - dragStartY);
+        });
+
+        // 初始视角居中对齐
+        window.onload = () => {
+            const enabled = loadEnabledGroups();
+            // 初始化设置 UI
+            const overlay = document.getElementById('settings-overlay');
+            const btnGear = document.getElementById('btn-gear');
+            const btnClose = document.getElementById('btn-settings-close');
+            const btnCancel = document.getElementById('btn-settings-cancel');
+            const btnSave = document.getElementById('btn-settings-save');
+            const tLetters = document.getElementById('toggle-letters');
+            const tNumbers = document.getElementById('toggle-numbers');
+            const tPunct = document.getElementById('toggle-punct');
+            const tSpecialSignals = document.getElementById('toggle-special-signals');
+            const tLatin = document.getElementById('toggle-latin');
+            const tBopomofo = document.getElementById('toggle-bopomofo');
+            const tJapanese = document.getElementById('toggle-japanese');
+            const tJapaneseSymbols = document.getElementById('toggle-japanese-symbols');
+            const tGreek = document.getElementById('toggle-greek');
+            const tCyrillic = document.getElementById('toggle-cyrillic');
+            const tHangul = document.getElementById('toggle-hangul');
+
+            function openSettings() {
+                const now = loadEnabledGroups();
+                tLetters.checked = !!now.letters;
+                tNumbers.checked = !!now.numbers;
+                tPunct.checked = !!now.punct;
+                tSpecialSignals.checked = !!now.specialSignals;
+                tLatin.checked = !!now.latin;
+                tBopomofo.checked = !!now.bopomofo;
+                tJapanese.checked = !!now.japanese;
+                tJapaneseSymbols.checked = !!now.japaneseSymbols;
+                tGreek.checked = !!now.greek;
+                tCyrillic.checked = !!now.cyrillic;
+                tHangul.checked = !!now.hangul;
+                overlay.classList.add('show');
+                overlay.setAttribute('aria-hidden', 'false');
+            }
+            function closeSettings() {
+                overlay.classList.remove('show');
+                overlay.setAttribute('aria-hidden', 'true');
+            }
+
+            const toggles = {
+                letters: tLetters,
+                numbers: tNumbers,
+                punct: tPunct,
+                specialSignals: tSpecialSignals,
+                latin: tLatin,
+                bopomofo: tBopomofo,
+                japanese: tJapanese,
+                japaneseSymbols: tJapaneseSymbols,
+                greek: tGreek,
+                cyrillic: tCyrillic,
+                hangul: tHangul
+            };
+
+            function enforceMutex(changedKey) {
+                const el = toggles[changedKey];
+                if (!el || !el.checked) return;
+                const conflicts = CONFLICT_MAP[changedKey];
+                if (!conflicts) return;
+                for (const otherKey of conflicts) {
+                    if (toggles[otherKey]) toggles[otherKey].checked = false;
+                }
+            }
+
+            tLetters.addEventListener('change', () => enforceMutex('letters'));
+            tNumbers.addEventListener('change', () => enforceMutex('numbers'));
+            tPunct.addEventListener('change', () => enforceMutex('punct'));
+            tSpecialSignals.addEventListener('change', () => enforceMutex('specialSignals'));
+            tLatin.addEventListener('change', () => enforceMutex('latin'));
+            tBopomofo.addEventListener('change', () => enforceMutex('bopomofo'));
+            tJapanese.addEventListener('change', () => enforceMutex('japanese'));
+            tJapaneseSymbols.addEventListener('change', () => enforceMutex('japaneseSymbols'));
+            tGreek.addEventListener('change', () => enforceMutex('greek'));
+            tCyrillic.addEventListener('change', () => enforceMutex('cyrillic'));
+            tHangul.addEventListener('change', () => enforceMutex('hangul'));
+
+            btnGear.addEventListener('click', openSettings);
+            btnClose.addEventListener('click', closeSettings);
+            btnCancel.addEventListener('click', closeSettings);
+            overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) closeSettings(); });
+            window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSettings(); });
+
+            btnSave.addEventListener('click', () => {
+                const next = {
+                    letters: tLetters.checked,
+                    numbers: tNumbers.checked,
+                    punct: tPunct.checked,
+                    specialSignals: tSpecialSignals.checked,
+                    latin: tLatin.checked,
+                    bopomofo: tBopomofo.checked,
+                    japanese: tJapanese.checked,
+                    japaneseSymbols: tJapaneseSymbols.checked,
+                    greek: tGreek.checked,
+                    cyrillic: tCyrillic.checked,
+                    hangul: tHangul.checked
+                };
+                saveEnabledGroups(next);
+                currentSequence = "";
+                rebuildTree(next);
+                updateUI();
+                closeSettings();
+            });
+
+            rebuildTree(enabled);
+            slider.scrollLeft = (svg.clientWidth - slider.clientWidth) / 2;
+        };
+    </script>
+</body>
+</html>
